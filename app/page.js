@@ -11,7 +11,7 @@ export default function Home() {
     date: new Date().toISOString().split('T')[0],
     location: ''
   });
-  const [patientData, setPatientData] = useState({ name: '', age: '', email: '', id: '' });
+  const [patientData, setPatientData] = useState({ name: '', age: '', email: '', id: '', phone: '' });
 
   const [indicators, setIndicators] = useState({
     pa: { sys: '', dia: '', status: '' },
@@ -243,6 +243,10 @@ export default function Home() {
             <label>Correo Electrónico</label>
             <input type="email" placeholder="correo@paciente.com" value={patientData.email} onChange={(e) => setPatientData({ ...patientData, email: e.target.value })} />
           </div>
+          <div className="form-group">
+            <label>Teléfono</label>
+            <input type="tel" placeholder="Número de teléfono" value={patientData.phone} onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })} />
+          </div>
         </div>
       </div>
 
@@ -372,6 +376,7 @@ export default function Home() {
             <div className="pdf-row"><span className="pdf-label">ID / Cédula:</span> <span>{patientData.id || 'N/A'}</span></div>
             <div className="pdf-row"><span className="pdf-label">Edad:</span> <span>{patientData.age || 'N/A'}</span></div>
             <div className="pdf-row"><span className="pdf-label">Correo:</span> <span>{patientData.email || 'N/A'}</span></div>
+            <div className="pdf-row"><span className="pdf-label">Teléfono:</span> <span>{patientData.phone || 'N/A'}</span></div>
           </div>
 
           <div className="pdf-section">
