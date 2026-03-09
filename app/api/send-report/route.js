@@ -1,9 +1,6 @@
-import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 function getLogoBuffer() {
     try {
@@ -22,6 +19,9 @@ export async function POST(req) {
         if (!email || !pdfBase64) {
             return NextResponse.json({ error: 'Faltan datos requeridos (email o pdf)' }, { status: 400 });
         }
+
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
 
         const pdfBuffer = Buffer.from(pdfBase64, 'base64');
 
