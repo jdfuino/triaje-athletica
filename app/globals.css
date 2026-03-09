@@ -156,6 +156,12 @@ textarea {
   min-height: 48px;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -388,13 +394,35 @@ textarea:focus {
   flex: 1;
 }
 
+/* Natural Language PDF Sections */
+.pdf-nl-section {
+  margin-bottom: 20px;
+}
+
+.pdf-nl-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #05254F;
+  border-left: 4px solid #05254F;
+  padding: 4px 0 4px 10px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pdf-nl-para {
+  font-size: 13.5px;
+  color: #1e293b;
+  line-height: 1.65;
+  margin-bottom: 7px;
+  padding-left: 14px;
+}
+
 /* PDF Preview */
 .pdf-preview {
   background: white;
   padding: 40px;
   margin: 0 auto;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid #ddd;
   min-height: 800px;
   max-width: 800px;
 }

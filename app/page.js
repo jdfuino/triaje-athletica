@@ -5,12 +5,89 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText } from 'react-icons/fi';
 
-export default function Home() {
-  const [eventData] = useState({
-    name: 'Silvers Games',
-    date: new Date().toISOString().split('T')[0],
-    location: ''
+// ─── Natural Language Report Builder ────────────────────────────────────────
+
+const PA_TEXT = {
+  'Normal': (s, d) => `Tu presión arterial registró ${s}/${d} mmHg, dentro del rango normal. Esto indica que tu corazón está trabajando con una presión adecuada.`,
+  'Elevada': (s, d) => `Tu presión arterial registró ${s}/${d} mmHg, ligeramente por encima del rango ideal. Puede ser transitorio, pero se recomienda mantenerla bajo monitoreo.`,
+  'HTA Estadio 1': (s, d) => `Tu presión arterial registró ${s}/${d} mmHg, en el rango de hipertensión estadio 1. Se recomienda seguimiento médico y mejoras en hábitos de vida.`,
+  'HTA Estadio 2': (s, d) => `Tu presión arterial registró ${s}/${d} mmHg, en el rango de hipertensión estadio 2. Es importante consultar con un especialista a la brevedad.`,
+};
+const FC_TEXT = {
+  'Normal': (v) => `Tu frecuencia cardíaca en reposo fue de ${v} latidos por minuto, dentro del rango normal, lo que refleja una buena condición cardiovascular.`,
+  'Baja': (v) => `Tu frecuencia cardíaca fue de ${v} latidos por minuto, por debajo del rango habitual. En deportistas bien entrenados esto puede ser normal (bradicardia fisiológica), pero es recomendable mencionarlo a tu médico.`,
+  'Alta': (v) => `Tu frecuencia cardíaca fue de ${v} latidos por minuto, ligeramente elevada. Puede relacionarse con actividad física reciente, estrés o deshidratación.`,
+};
+const SPO2_TEXT = {
+  'Normal': (v) => `Tu saturación de oxígeno en sangre fue del ${v}%, lo que indica una función respiratoria adecuada.`,
+  'Déficit': (v) => `Tu saturación de oxígeno fue del ${v}%, por debajo del valor esperado (≥94%). Se recomienda una evaluación adicional de la función respiratoria.`,
+};
+const ART_LABELS = {
+  hombros: 'hombros', codos: 'codos', munecas: 'muñecas',
+  caderas: 'caderas', rodillas: 'rodillas', tobillos: 'tobillos',
+};
+const MUSCLE_LABELS = {
+  deltoides: 'Deltoides', estabilizadoresEsc: 'Estabilizadores escapulares',
+  rotadoresHomb: 'Rotadores de hombro', zonaMedia: 'Zona media (core)',
+  gluteos: 'Glúteos', isquiotibiales: 'Isquiotibiales',
+  cuadriceps: 'Cuádriceps', flexoresCadera: 'Flexores de cadera',
+  estabilizadoresTob: 'Estabilizadores de tobillo',
+};
+const FLEX_LABELS = { psoas: 'Psoas', cuadriceps: 'Cuádriceps', isquiotibiales: 'Isquiotibiales' };
+
+function buildReport(indicators) {
+  const r = { vitales: [], rangos: [], fuerza: [], flexibilidad: [] };
+
+  // Signos vitales
+  if (indicators.pa.sys && indicators.pa.dia && PA_TEXT[indicators.pa.status])
+    r.vitales.push(PA_TEXT[indicators.pa.status](indicators.pa.sys, indicators.pa.dia));
+  if (indicators.fc.value && FC_TEXT[indicators.fc.status])
+    r.vitales.push(FC_TEXT[indicators.fc.status](indicators.fc.value));
+  if (indicators.spo2.value && SPO2_TEXT[indicators.spo2.status])
+    r.vitales.push(SPO2_TEXT[indicators.spo2.status](indicators.spo2.value));
+
+  // Rangos articulares
+  const rNormal = [], rDef = [], rExc = [];
+  Object.entries(indicators.rangos).forEach(([k, v]) => {
+    const l = ART_LABELS[k] || k;
+    if (v === 'normal') rNormal.push(l);
+    else if (v === 'deficit') rDef.push(l);
+    else if (v === 'exceso') rExc.push(l);
   });
+  if (rNormal.length) r.rangos.push(`Movilidad articular normal en: ${rNormal.join(', ')}.`);
+  if (rDef.length) r.rangos.push(`Se detectó limitación en el rango de movimiento en: ${rDef.join(', ')}. Esto puede deberse a tensión muscular, lesiones previas o falta de movilidad específica.`);
+  if (rExc.length) r.rangos.push(`Se detectó hipermovilidad en: ${rExc.join(', ')}. La movilidad aumentada puede generar inestabilidad articular si no se trabaja la musculatura de soporte.`);
+
+  // Fuerza muscular
+  const fNorm = [], fLeve = [], fMod = [], fSev = [];
+  Object.entries(indicators.fuerza).forEach(([k, v]) => {
+    if (!v) return;
+    const n = parseInt(v);
+    const l = MUSCLE_LABELS[k] || k;
+    if (n === 5) fNorm.push(l);
+    else if (n === 4) fLeve.push(`${l} (${n}/5)`);
+    else if (n === 3) fMod.push(`${l} (${n}/5)`);
+    else fSev.push(`${l} (${n}/5)`);
+  });
+  if (fNorm.length) r.fuerza.push(`Fuerza muscular completa (5/5) en: ${fNorm.join(', ')}.`);
+  if (fLeve.length) r.fuerza.push(`Leve reducción de fuerza en: ${fLeve.join(', ')}. Se recomienda ejercicio de fortalecimiento específico.`);
+  if (fMod.length) r.fuerza.push(`Reducción moderada de fuerza en: ${fMod.join(', ')}. Se sugiere un programa de rehabilitación dirigido.`);
+  if (fSev.length) r.fuerza.push(`Reducción significativa de fuerza en: ${fSev.join(', ')}. Requiere atención especializada a la brevedad.`);
+
+  // Flexibilidad
+  const flNorm = [], flDef = [];
+  Object.entries(indicators.flexibilidad).forEach(([k, v]) => {
+    const l = FLEX_LABELS[k] || k;
+    if (v === 'normal') flNorm.push(l);
+    else if (v === 'deficit') flDef.push(l);
+  });
+  if (flNorm.length) r.flexibilidad.push(`Flexibilidad adecuada en: ${flNorm.join(', ')}.`);
+  if (flDef.length) r.flexibilidad.push(`Flexibilidad reducida en: ${flDef.join(', ')}. Se recomienda incorporar estiramientos regulares específicos para estas zonas.`);
+
+  return r;
+}
+
+export default function Home() {
   const [patientData, setPatientData] = useState({ name: '', age: '', email: '', id: '', phone: '' });
 
   const [indicators, setIndicators] = useState({
@@ -119,13 +196,23 @@ export default function Home() {
       const pdf = new jsPDF('p', 'mm', 'letter');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 12; // mm — top/bottom/side margins
+      const margin = 12;
       const contentWidth = pageWidth - margin * 2;
       const contentHeightMm = pageHeight - margin * 2;
-
-      // Canvas pixels per mm (based on content width)
       const pxPerMm = canvas.width / contentWidth;
       const contentHeightPx = contentHeightMm * pxPerMm;
+
+      // Build safe break points: top of each section in canvas pixels.
+      // This ensures page cuts always land BETWEEN sections, never mid-text.
+      const scale = canvas.width / pdfRef.current.offsetWidth;
+      const containerTop = pdfRef.current.getBoundingClientRect().top;
+      const sectionEls = pdfRef.current.querySelectorAll(
+        '.pdf-header, .pdf-patient-box, .pdf-nl-section, .pdf-signatures'
+      );
+      const breakPoints = Array.from(sectionEls)
+        .map(el => Math.round((el.getBoundingClientRect().top - containerTop) * scale))
+        .filter(px => px > 0)
+        .sort((a, b) => a - b);
 
       let yPx = 0;
       let isFirstPage = true;
@@ -134,9 +221,20 @@ export default function Home() {
         if (!isFirstPage) pdf.addPage();
         isFirstPage = false;
 
-        const sliceHeightPx = Math.min(contentHeightPx, canvas.height - yPx);
+        const idealEnd = yPx + contentHeightPx;
 
-        // Slice the canvas for this page segment
+        // Find the last safe break point before idealEnd (at least 40% into the page).
+        // If none found, fall back to ideal cut (unavoidable for very long single sections).
+        let cutAt = idealEnd;
+        if (idealEnd < canvas.height) {
+          const minCut = yPx + contentHeightPx * 0.4;
+          for (const bp of breakPoints) {
+            if (bp > minCut && bp <= idealEnd) cutAt = bp;
+          }
+        }
+
+        const sliceHeightPx = Math.min(cutAt - yPx, canvas.height - yPx);
+
         const sliceCanvas = document.createElement('canvas');
         sliceCanvas.width = canvas.width;
         sliceCanvas.height = sliceHeightPx;
@@ -148,7 +246,7 @@ export default function Home() {
 
         pdf.addImage(sliceImgData, 'PNG', margin, margin, contentWidth, sliceHeightMm);
 
-        yPx += contentHeightPx;
+        yPx += sliceHeightPx;
       }
 
       return pdf;
@@ -364,73 +462,65 @@ export default function Home() {
       {/* Hidden PDF Canvas rendering area */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
         <div ref={pdfRef} className="pdf-preview">
+
+          {/* Header */}
           <div className="pdf-header">
-            <h1>Silvers Games</h1>
-            <h2>Triaje de Condición Física</h2>
-            {eventData.name && <p><strong>Evento:</strong> {eventData.name} - {eventData.location} ({eventData.date})</p>}
+            <img src="/SilverGame_informe.png" alt="Silvers Games" style={{ height: '100px', objectFit: 'contain', marginBottom: '14px' }} />
+            <h2>Informe de Evaluación Física</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+              Fecha: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
           </div>
 
-          <div className="pdf-section">
-            <div className="pdf-section-title">Datos del Paciente</div>
-            <div className="pdf-row"><span className="pdf-label">Nombre:</span> <span>{patientData.name || 'N/A'}</span></div>
-            <div className="pdf-row"><span className="pdf-label">ID / Cédula:</span> <span>{patientData.id || 'N/A'}</span></div>
-            <div className="pdf-row"><span className="pdf-label">Edad:</span> <span>{patientData.age || 'N/A'}</span></div>
-            <div className="pdf-row"><span className="pdf-label">Correo:</span> <span>{patientData.email || 'N/A'}</span></div>
-            <div className="pdf-row"><span className="pdf-label">Teléfono:</span> <span>{patientData.phone || 'N/A'}</span></div>
-          </div>
-
-          <div className="pdf-section">
-            <div className="pdf-section-title">Signos Vitales</div>
-            <div className="pdf-row"><span className="pdf-label">Presión Arterial:</span> <span>{indicators.pa.sys}/{indicators.pa.dia} mmHg ({indicators.pa.status})</span></div>
-            <div className="pdf-row"><span className="pdf-label">Frecuencia Cardíaca:</span> <span>{indicators.fc.value} LPM ({indicators.fc.status})</span></div>
-            <div className="pdf-row"><span className="pdf-label">Oximetría SpO2:</span> <span>{indicators.spo2.value}% ({indicators.spo2.status})</span></div>
-          </div>
-
-          <div className="pdf-section">
-            <div className="pdf-section-title">Rangos Articulares</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {Object.keys(indicators.rangos).map(art => (
-                <div key={art} className="pdf-row" style={{ border: 'none' }}><span className="pdf-label" style={{ textTransform: 'capitalize' }}>{art}:</span> <span>{indicators.rangos[art]}</span></div>
-              ))}
+          {/* Patient info box */}
+          <div className="pdf-patient-box" style={{ background: '#f1f5f9', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px' }}>
+            <div style={{ fontWeight: '700', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px' }}>Datos del Atleta</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 20px', fontSize: '14px' }}>
+              {patientData.name && <div><strong>Nombre:</strong> {patientData.name}</div>}
+              {patientData.id && <div><strong>Cédula:</strong> {patientData.id}</div>}
+              {patientData.age && <div><strong>Edad:</strong> {patientData.age} años</div>}
+              {patientData.phone && <div><strong>Teléfono:</strong> {patientData.phone}</div>}
+              {patientData.email && <div style={{ gridColumn: '1 / -1' }}><strong>Correo:</strong> {patientData.email}</div>}
             </div>
           </div>
 
-          <div className="pdf-section">
-            <div className="pdf-section-title">Fuerza Muscular (Daniels)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {Object.keys(indicators.fuerza).map(muscle => (
-                <div key={muscle} className="pdf-row" style={{ border: 'none' }}><span className="pdf-label" style={{ textTransform: 'capitalize' }}>{muscle.replace(/([A-Z])/g, ' $1').trim()}:</span> <span>{indicators.fuerza[muscle] ? `${indicators.fuerza[muscle]}/5` : 'N/A'}</span></div>
-              ))}
-            </div>
-          </div>
+          {/* Natural language sections */}
+          {(() => {
+            const report = buildReport(indicators);
+            const sections = [
+              { title: 'Signos Vitales', items: report.vitales },
+              { title: 'Rangos Articulares', items: report.rangos },
+              { title: 'Fuerza Muscular', items: report.fuerza },
+              { title: 'Flexibilidad', items: report.flexibilidad },
+            ];
+            return sections.map(({ title, items }) =>
+              items.length > 0 && (
+                <div key={title} className="pdf-nl-section">
+                  <div className="pdf-nl-title">{title}</div>
+                  {items.map((p, i) => <p key={i} className="pdf-nl-para">{p}</p>)}
+                </div>
+              )
+            );
+          })()}
 
-          <div className="pdf-section">
-            <div className="pdf-section-title">Flexibilidad</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {Object.keys(indicators.flexibilidad).map(muscle => (
-                <div key={muscle} className="pdf-row" style={{ border: 'none' }}><span className="pdf-label" style={{ textTransform: 'capitalize' }}>{muscle}:</span> <span>{indicators.flexibilidad[muscle]}</span></div>
-              ))}
-            </div>
-          </div>
-
+          {/* Doctor observations */}
           {indicators.observations && (
-            <div className="pdf-section">
-              <div className="pdf-section-title">Observaciones y Conclusiones</div>
-              <p style={{ fontSize: '14px', lineHeight: '1.5' }}>{indicators.observations}</p>
+            <div className="pdf-nl-section">
+              <div className="pdf-nl-title">Observaciones del Especialista</div>
+              <p className="pdf-nl-para">{indicators.observations}</p>
             </div>
           )}
 
+          {/* Signatures */}
           <div className="pdf-signatures">
             <div className="signature-box">
               <div className="signature-img-container">
-                {/* Placeholder for real signature image */}
                 <div style={{ fontFamily: 'cursive', fontSize: '24px', color: '#000' }}>Firma Fisiatra</div>
               </div>
               <div className="signature-line">Firma del Médico Evaluador</div>
             </div>
             <div className="signature-box">
               <div className="signature-img-container">
-                {/* Placeholder for stamp image */}
                 <div style={{ border: '2px solid red', color: 'red', padding: '10px', transform: 'rotate(-10deg)', fontSize: '18px', fontWeight: 'bold' }}>SELLO OFICIAL</div>
               </div>
               <div className="signature-line">Sello Médico</div>
