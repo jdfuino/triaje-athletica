@@ -1,15 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
-function getLogoBuffer() {
-    try {
-        const logoPath = path.join(process.cwd(), 'public', 'SilverGame_Logo.png');
-        return fs.readFileSync(logoPath);
-    } catch {
-        return null;
-    }
-}
+const LOGO_URL = 'https://digimedven.com/silvergames/SilverGame_Logo.png';
 
 export async function POST(req) {
     try {
@@ -25,13 +16,6 @@ export async function POST(req) {
 
         const pdfBuffer = Buffer.from(pdfBase64, 'base64');
 
-        const logoBuffer = getLogoBuffer();
-        const attachments = [];
-        if (logoBuffer) {
-            attachments.push({ filename: 'logo.png', content: logoBuffer, content_type: 'image/png', content_id: 'logo', inline: true });
-        }
-        attachments.push({ filename: `Evaluacion_${patientName || 'SilversGames'}.pdf`, content: pdfBuffer });
-
         const { data, error } = await resend.emails.send({
             from: process.env.RESEND_FROM_EMAIL,
             to: email,
@@ -39,7 +23,7 @@ export async function POST(req) {
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #0f172a;">
                     <div style="background: linear-gradient(135deg, #05254F, #06b6d4); padding: 32px 24px; text-align: center; border-radius: 12px 12px 0 0;">
-                        ${logoBuffer ? '<img src="cid:logo" alt="Silvers Games" style="height: 90px; width: auto; object-fit: contain;" />' : ''}
+                        <img src="${LOGO_URL}" alt="Silvers Games" style="height: 90px; width: auto; object-fit: contain;" />
                         <p style="color: rgba(255,255,255,0.85); margin: 10px 0 0; font-size: 14px;">Evaluación Física</p>
                     </div>
                     <div style="background: #ffffff; padding: 32px 24px; border: 1px solid #e2e8f0; border-top: none;">
@@ -60,7 +44,9 @@ export async function POST(req) {
                     </div>
                 </div>
             `,
-            attachments,
+            attachments: [
+                { filename: `Evaluacion_${patientName || 'SilversGames'}.pdf`, content: pdfBuffer }
+            ],
         });
 
         if (error) {

@@ -114,6 +114,7 @@ export default function Home() {
 
   const [loading, setLoading] = useState(false);
   const pdfRef = useRef(null);
+  const resetOnClose = useRef(false);
 
   // Manipulación del DOM (Vanilla JS) para el modal
   const showModal = (type, title, message) => {
@@ -121,21 +122,28 @@ export default function Home() {
     const modalIcon = document.getElementById('modal-icon');
     const modalTitle = document.getElementById('modal-title');
     const modalMsg = document.getElementById('modal-msg');
+    const modalBtn = document.getElementById('modal-btn');
 
-    // Configurar icono y estilo
     modalIcon.className = `modal-icon ${type}`;
-    modalIcon.innerHTML = type === 'success' ? '✓' : '✕';
+    if (type === 'loading') {
+      modalIcon.innerHTML = '<div class="modal-spinner"></div>';
+    } else {
+      modalIcon.innerHTML = type === 'success' ? '✓' : '✕';
+    }
 
-    // Configurar textos
     modalTitle.innerText = title;
     modalMsg.innerText = message;
+    modalBtn.style.display = type === 'loading' ? 'none' : 'block';
 
-    // Mostrar modal (ajustando el display CSS)
     modal.style.display = 'flex';
   };
 
   const closeModal = () => {
     document.getElementById('vanilla-modal').style.display = 'none';
+    if (resetOnClose.current) {
+      resetOnClose.current = false;
+      window.location.reload();
+    }
   };
 
   const calculatePAStatus = (sys, dia) => {
@@ -269,10 +277,11 @@ export default function Home() {
 
   const sendEmail = async () => {
     if (!patientData.email) return showModal("error", "Aviso", "Por favor, ingresa el email del paciente.");
-    const pdf = await generatePDF();
-    if (!pdf) return;
-
+    showModal("loading", "Enviando informe...", "Estamos generando y enviando el PDF al correo del atleta. Esto puede tomar unos segundos.");
     setLoading(true);
+    const pdf = await generatePDF();
+    if (!pdf) { setLoading(false); closeModal(); return; }
+
     try {
       const base64PDF = pdf.output('datauristring').split(',')[1];
       const res = await fetch('/api/send-report', {
@@ -285,6 +294,7 @@ export default function Home() {
         })
       });
       if (res.ok) {
+        resetOnClose.current = true;
         showModal("success", "Email Enviado", "¡El reporte fue enviado exitosamente al paciente!");
       } else {
         showModal("error", "Error de envío", "Hubo un problema al enviar el correo. Por favor intenta de nuevo.");
@@ -305,7 +315,7 @@ export default function Home() {
           <div id="modal-icon" className="modal-icon"></div>
           <h3 id="modal-title"></h3>
           <p id="modal-msg"></p>
-          <button className="btn btn-primary" onClick={closeModal} style={{ marginTop: '1.5rem', width: '100%' }}>
+          <button id="modal-btn" className="btn btn-primary" onClick={closeModal} style={{ marginTop: '1.5rem', width: '100%' }}>
             Aceptar
           </button>
         </div>
