@@ -7,6 +7,8 @@ export async function POST(req) {
         const body = await req.json();
         const { email, patientName, pdfBase64 } = body;
 
+        console.log('DEBUG send-report:', { email: email || 'VACIO', pdfBase64Length: pdfBase64?.length || 0 });
+
         if (!email || !pdfBase64) {
             return NextResponse.json({ error: 'Faltan datos requeridos (email o pdf)' }, { status: 400 });
         }
