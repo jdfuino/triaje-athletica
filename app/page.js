@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText } from 'react-icons/fi';
@@ -113,8 +113,13 @@ export default function Home() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [today, setToday] = useState('');
   const pdfRef = useRef(null);
   const resetOnClose = useRef(false);
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }));
+  }, []);
 
   // Manipulación del DOM (Vanilla JS) para el modal
   const showModal = (type, title, message) => {
@@ -478,7 +483,7 @@ export default function Home() {
             <img src="/SilverGame_informe.png" alt="Silvers Games" style={{ height: '100px', objectFit: 'contain', marginBottom: '14px' }} />
             <h2>Informe de Evaluación Física</h2>
             <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
-              Fecha: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+              Fecha: {today}
             </p>
           </div>
 
