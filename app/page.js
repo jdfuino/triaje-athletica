@@ -114,11 +114,22 @@ export default function Home() {
 
   const [loading, setLoading] = useState(false);
   const [today, setToday] = useState('');
+  const [logoDataUrl, setLogoDataUrl] = useState('');
   const pdfRef = useRef(null);
   const resetOnClose = useRef(false);
 
   useEffect(() => {
     setToday(new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }));
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+      setLogoDataUrl(c.toDataURL('image/png'));
+    };
+    img.src = '/SilverGame_informe.png';
   }, []);
 
   // Manipulación del DOM (Vanilla JS) para el modal
@@ -480,7 +491,7 @@ export default function Home() {
 
           {/* Header */}
           <div className="pdf-header">
-            <img src="/SilverGame_informe.png" alt="Silvers Games" style={{ height: '100px', objectFit: 'contain', marginBottom: '14px' }} />
+            <img src={logoDataUrl || '/SilverGame_informe.png'} alt="Silvers Games" style={{ height: '100px', objectFit: 'contain', marginBottom: '14px' }} />
             <h2>Informe de Evaluación Física</h2>
             <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
               Fecha: {today}
