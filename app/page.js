@@ -205,7 +205,7 @@ export default function Home() {
     if (!pdfRef.current) return null;
     try {
       setLoading(true);
-      const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true });
+      const canvas = await html2canvas(pdfRef.current, { scale: 1.5, useCORS: true });
       const pdf = new jsPDF('p', 'mm', 'letter');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -254,10 +254,10 @@ export default function Home() {
         const ctx = sliceCanvas.getContext('2d');
         ctx.drawImage(canvas, 0, yPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
 
-        const sliceImgData = sliceCanvas.toDataURL('image/png');
+        const sliceImgData = sliceCanvas.toDataURL('image/jpeg', 0.85);
         const sliceHeightMm = sliceHeightPx / pxPerMm;
 
-        pdf.addImage(sliceImgData, 'PNG', margin, margin, contentWidth, sliceHeightMm);
+        pdf.addImage(sliceImgData, 'JPEG', margin, margin, contentWidth, sliceHeightMm);
 
         yPx += sliceHeightPx;
       }
