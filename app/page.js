@@ -306,7 +306,10 @@ export default function Home() {
         body: JSON.stringify({
           email: patientData.email,
           patientName: patientData.name,
-          pdfBase64: base64PDF
+          pdfBase64: base64PDF,
+          patientData,
+          indicators,
+          fecha: today,
         })
       });
       if (res.ok) {
