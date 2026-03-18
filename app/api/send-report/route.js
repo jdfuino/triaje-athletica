@@ -63,7 +63,7 @@ export async function POST(req) {
                 edad: patientData.age ? parseInt(patientData.age) : null,
                 email: patientData.email || null,
                 telefono: patientData.phone || null,
-                fecha: fecha || new Date().toISOString().split('T')[0],
+                fecha: new Date().toISOString().split('T')[0],
                 pa_sys: indicators.pa?.sys ? parseInt(indicators.pa.sys) : null,
                 pa_dia: indicators.pa?.dia ? parseInt(indicators.pa.dia) : null,
                 pa_status: indicators.pa?.status || null,
