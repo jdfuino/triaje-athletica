@@ -57,7 +57,7 @@ export async function POST(req) {
 
         // Guardar evaluación en Supabase (no bloquea el flujo si falla)
         if (patientData && indicators) {
-            const { error: dbError } = await supabaseAdmin.from('evaluaciones').insert([{
+            const { error: dbError } = await supabaseAdmin.from('evaluacion_fisica').insert([{
                 cedula: patientData.id || null,
                 nombre: patientData.name || null,
                 edad: patientData.age ? parseInt(patientData.age) : null,
