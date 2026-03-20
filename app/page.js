@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText } from 'react-icons/fi';
+import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut } from 'react-icons/fi';
+import { createBrowserClient } from '@supabase/ssr';
 
 // ─── Natural Language Report Builder ────────────────────────────────────────
 
@@ -115,6 +116,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [today, setToday] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState('');
+  const [specialist, setSpecialist] = useState({ nombre: '', rol: '' });
   const pdfRef = useRef(null);
   const resetOnClose = useRef(false);
 
@@ -130,6 +132,19 @@ export default function Home() {
       setLogoDataUrl(c.toDataURL('image/png'));
     };
     img.src = '/SilverGame_informe.png';
+
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.user_metadata) {
+        setSpecialist({
+          nombre: data.user.user_metadata.nombre || '',
+          rol: data.user.user_metadata.rol || '',
+        });
+      }
+    });
   }, []);
 
   // Manipulación del DOM (Vanilla JS) para el modal
@@ -339,6 +354,23 @@ export default function Home() {
           </button>
         </div>
       </div >
+
+      {specialist.nombre && (
+        <div className="specialist-topbar">
+          <div className="specialist-topbar-inner">
+            <span className="specialist-info">
+              <FiUser size={16} style={{ marginRight: '0.5rem', verticalAlign: 'middle', opacity: 0.85 }} />
+              <span className="specialist-hola">Hola, </span><strong>{specialist.nombre}</strong>
+              {specialist.rol && <span className="specialist-rol"> · {specialist.rol.charAt(0).toUpperCase() + specialist.rol.slice(1)}</span>}
+            </span>
+            <form action="/api/auth/logout" method="POST">
+              <button type="submit" className="btn-logout">
+                <FiLogOut size={14} /> Cerrar sesión
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <header className="main-header">
         <div className="header-logo-area">
