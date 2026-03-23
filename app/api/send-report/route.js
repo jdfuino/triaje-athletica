@@ -102,6 +102,8 @@ export async function POST(req) {
                 flex_psoas: indicators.flexibilidad?.psoas || null,
                 flex_cuadriceps: indicators.flexibilidad?.cuadriceps || null,
                 flex_isquiotibiales: indicators.flexibilidad?.isquiotibiales || null,
+                sts_reps:   indicators.sts?.reps   ? parseInt(indicators.sts.reps) : null,
+                sts_status: indicators.sts?.status || null,
                 observaciones: indicators.observations || null,
                 specialist_id:     specialist?.id     || null,
                 specialist_nombre: specialist?.nombre || null,

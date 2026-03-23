@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter } from 'react-icons/fi';
+import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter, FiPlay, FiPause } from 'react-icons/fi';
 import { createBrowserClient } from '@supabase/ssr';
 
 // ─── Natural Language Report Builder ────────────────────────────────────────
@@ -35,9 +35,13 @@ const MUSCLE_LABELS = {
   estabilizadoresTob: 'Estabilizadores de tobillo',
 };
 const FLEX_LABELS = { psoas: 'Psoas', cuadriceps: 'Cuádriceps', isquiotibiales: 'Isquiotibiales' };
+const STS_TEXT = {
+  normal:  (r) => `En la prueba funcional Sit-to-Stand (60 segundos), completaste ${r} repeticiones, resultado dentro de los parámetros normales. Esto refleja una buena capacidad funcional de tus miembros inferiores.`,
+  deficit: (r) => `En la prueba funcional Sit-to-Stand (60 segundos), completaste ${r} repeticiones, resultado que indica una reducción en la capacidad funcional de miembros inferiores. Se recomienda un programa de fortalecimiento progresivo.`,
+};
 
 function buildReport(indicators) {
-  const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [] };
+  const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [], sts: [] };
 
   // Signos vitales
   if (indicators.pa.sys && indicators.pa.dia && PA_TEXT[indicators.pa.status])
@@ -100,6 +104,11 @@ function buildReport(indicators) {
   if (flNorm.length) r.flexibilidad.push(`Flexibilidad adecuada en: ${flNorm.join(', ')}.`);
   if (flDef.length) r.flexibilidad.push(`Flexibilidad reducida en: ${flDef.join(', ')}. Se recomienda incorporar estiramientos regulares específicos para estas zonas.`);
 
+  // Sit-to-Stand
+  const sts = indicators.sts;
+  if (sts?.reps && sts?.status && STS_TEXT[sts.status])
+    r.sts.push(STS_TEXT[sts.status](sts.reps));
+
   return r;
 }
 
@@ -128,8 +137,11 @@ export default function Home() {
     flexibilidad: {
       psoas: 'normal', cuadriceps: 'normal', isquiotibiales: 'normal'
     },
+    sts: { reps: '', status: '' },
     observations: ''
   });
+
+  const [stsTimer, setStsTimer] = useState({ active: false, timeLeft: 60 });
 
   const [loading, setLoading] = useState(false);
   const [today, setToday] = useState('');
@@ -263,6 +275,32 @@ export default function Home() {
   const handleFlexibilidad = (muscle, value) => {
     setIndicators({ ...indicators, flexibilidad: { ...indicators.flexibilidad, [muscle]: value } });
   };
+
+  const beep = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      for (let i = 0; i < 4; i++) {
+        const osc = ctx.createOscillator();
+        osc.connect(ctx.destination);
+        osc.frequency.value = 880;
+        const start = ctx.currentTime + i * 0.6;
+        osc.start(start);
+        osc.stop(start + 0.4);
+      }
+    } catch (e) { /* silencioso si el navegador bloquea audio */ }
+  };
+
+  useEffect(() => {
+    if (!stsTimer.active) return;
+    if (stsTimer.timeLeft === 0) {
+      setStsTimer(t => ({ ...t, active: false }));
+      beep();
+      return;
+    }
+    const id = setInterval(() =>
+      setStsTimer(t => ({ ...t, timeLeft: t.timeLeft - 1 })), 1000);
+    return () => clearInterval(id);
+  }, [stsTimer.active, stsTimer.timeLeft]);
 
   const buscarPaciente = async () => {
     if (!cedulaBusqueda.trim()) return;
@@ -739,6 +777,66 @@ export default function Home() {
 
       <div className="card">
         <div className="card-header">
+          <span className="section-number">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+              <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><line x1="12" y1="12" x2="12" y2="12.01"/>
+            </svg>
+          </span>
+          <h2>Sit-to-Stand Test (60 seg)</h2>
+        </div>
+        <p className="mb-3" style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+          Inicia el cronómetro y cuenta las repeticiones del atleta. Al finalizar el tiempo, registra el número de repeticiones completadas y selecciona el resultado correspondiente.
+        </p>
+
+        {/* Cronómetro */}
+        <div className="sts-timer-wrap">
+          <p className="sts-timer-label">Tiempo restante</p>
+          <div className={`sts-countdown${stsTimer.timeLeft === 0 ? ' sts-done' : ''}`}>
+            {String(Math.floor(stsTimer.timeLeft / 60)).padStart(1,'0')}:{String(stsTimer.timeLeft % 60).padStart(2,'0')}
+          </div>
+          {stsTimer.timeLeft === 0 && <p className="sts-timer-done-label">¡Tiempo completado!</p>}
+          <div className="sts-timer-btns">
+            <button
+              className="sts-timer-btn sts-timer-btn-primary"
+              onClick={() => setStsTimer(t => ({ ...t, active: !t.active }))}
+              disabled={stsTimer.timeLeft === 0}
+            >
+              {stsTimer.active
+                ? <><FiPause size={16} /> Pausar</>
+                : <><FiPlay size={16} /> {stsTimer.timeLeft < 60 ? 'Continuar' : 'Iniciar'}</>
+              }
+            </button>
+            <button
+              className="sts-timer-btn sts-timer-btn-ghost"
+              onClick={() => setStsTimer({ active: false, timeLeft: 60 })}
+            >
+              <FiRotateCw size={15} /> Reiniciar
+            </button>
+          </div>
+        </div>
+
+        {/* Repeticiones y resultado */}
+        <div className="sts-result-row">
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Repeticiones completadas</label>
+            <input
+              type="number" min="0" placeholder="Nº repeticiones"
+              value={indicators.sts.reps}
+              onChange={e => setIndicators({ ...indicators, sts: { ...indicators.sts, reps: e.target.value } })}
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Resultado</label>
+            <div className="status-selector adams-full sts-result-selector">
+              <button className={`status-btn ${indicators.sts.status === 'normal' ? 'active normal' : ''}`} onClick={() => setIndicators({ ...indicators, sts: { ...indicators.sts, status: 'normal' } })}>Normal</button>
+              <button className={`status-btn ${indicators.sts.status === 'deficit' ? 'active deficit' : ''}`} onClick={() => setIndicators({ ...indicators, sts: { ...indicators.sts, status: 'deficit' } })}>Déficit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
           <span className="section-number"><FiFileText /></span>
           <h2>Observaciones Adicionales</h2>
         </div>
@@ -788,6 +886,7 @@ export default function Home() {
               { title: 'Fuerza Muscular', items: report.fuerza },
               { title: 'Prueba de Adams', items: report.adams },
               { title: 'Flexibilidad', items: report.flexibilidad },
+              { title: 'Prueba Funcional (Sit-to-Stand)', items: report.sts },
             ];
             return sections.map(({ title, items }) =>
               items.length > 0 && (
