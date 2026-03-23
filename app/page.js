@@ -165,10 +165,11 @@ export default function Home() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.user_metadata) {
+      if (data?.user) {
         setSpecialist({
-          nombre: data.user.user_metadata.nombre || '',
-          rol: data.user.user_metadata.rol || '',
+          id:     data.user.id,
+          nombre: data.user.user_metadata?.nombre || '',
+          rol:    data.user.user_metadata?.rol    || '',
         });
       }
     });
@@ -392,6 +393,7 @@ export default function Home() {
           patientData,
           indicators,
           fecha: today,
+          specialist,
         })
       });
       if (res.ok) {

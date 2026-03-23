@@ -6,7 +6,7 @@ const LOGO_URL = 'https://digimedven.com/silvergames/SilverGame_Logo.png';
 export async function POST(req) {
     try {
         const body = await req.json();
-        const { email, patientName, pdfBase64, patientData, indicators, fecha } = body;
+        const { email, patientName, pdfBase64, patientData, indicators, fecha, specialist } = body;
 
         if (!email || !pdfBase64) {
             return NextResponse.json({ error: 'Faltan datos requeridos (email o pdf)' }, { status: 400 });
@@ -103,6 +103,9 @@ export async function POST(req) {
                 flex_cuadriceps: indicators.flexibilidad?.cuadriceps || null,
                 flex_isquiotibiales: indicators.flexibilidad?.isquiotibiales || null,
                 observaciones: indicators.observations || null,
+                specialist_id:     specialist?.id     || null,
+                specialist_nombre: specialist?.nombre || null,
+                specialist_rol:    specialist?.rol    || null,
             }]);
             if (dbError) console.error('Supabase insert error:', dbError.message);
         }
