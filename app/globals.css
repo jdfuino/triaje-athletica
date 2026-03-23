@@ -154,12 +154,35 @@ textarea {
   background-color: var(--bg-main);
   color: var(--text-dark);
   min-height: 48px;
+  box-sizing: border-box;
+  resize: vertical;
+  max-width: 100%;
+}
+
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  padding-right: 2.5rem;
+  cursor: pointer;
 }
 
 input::placeholder,
 textarea::placeholder {
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+select:has(option[value=""]:checked) {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+select option {
+  color: var(--text);
+  opacity: 1;
 }
 
 input:focus,
@@ -240,6 +263,16 @@ textarea:focus {
   display: flex;
   gap: 0.4rem;
   margin-top: 0.35rem;
+}
+
+.status-selector.adams-full .status-btn {
+  flex: 1;
+}
+
+.adams-sub-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .status-btn {
@@ -943,6 +976,33 @@ textarea:focus {
   font-weight: 400;
 }
 
+.specialist-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topbar-home-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.topbar-home-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Tooltip nativo via title — sin JS extra */
+
 .btn-logout {
   display: flex;
   align-items: center;
@@ -960,4 +1020,194 @@ textarea:focus {
 
 .btn-logout:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Accessibility helpers ───────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Pre-evaluación ──────────────────────────────────────────────────────── */
+
+.pre-eval-page {
+  min-height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 3rem 1.5rem;
+}
+
+.pre-eval-specialist-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pre-eval-specialist-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.pre-eval-welcome {
+  font-size: 1.25rem;
+  color: var(--text-dark);
+}
+
+.pre-eval-rol {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pre-eval-options {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 760px;
+  align-items: stretch;
+}
+
+.pre-eval-option {
+  flex: 1;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  border: 1.5px solid var(--border);
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.pre-eval-option:hover {
+  box-shadow: 0 8px 28px rgba(5, 37, 79, 0.12);
+  border-color: var(--secondary);
+}
+
+.pre-eval-option-btn {
+  margin-top: auto;
+}
+
+.pre-eval-option-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+}
+
+.pre-eval-option-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.pre-eval-option-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0;
+}
+
+.pre-eval-option-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.pre-eval-search {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.pre-eval-search input {
+  flex: 1;
+  padding: 0.625rem 0.875rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  color: var(--text-dark);
+  background: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pre-eval-search input:focus {
+  outline: none;
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+}
+
+.pre-eval-not-found {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  padding: 0.875rem 1rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.pre-eval-not-found p {
+  color: var(--danger);
+  font-size: 0.875rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ── Tarjeta de paciente existente ───────────────────────────────────────── */
+
+.patient-info-bar {
+  background: var(--primary);
+  color: white;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+}
+
+.patient-info-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.patient-info-sep {
+  opacity: 0.4;
+}
+
+@media (max-width: 640px) {
+  .pre-eval-options {
+    flex-direction: column;
+  }
 }

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut } from 'react-icons/fi';
+import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter } from 'react-icons/fi';
 import { createBrowserClient } from '@supabase/ssr';
 
 // ─── Natural Language Report Builder ────────────────────────────────────────
@@ -37,7 +37,7 @@ const MUSCLE_LABELS = {
 const FLEX_LABELS = { psoas: 'Psoas', cuadriceps: 'Cuádriceps', isquiotibiales: 'Isquiotibiales' };
 
 function buildReport(indicators) {
-  const r = { vitales: [], rangos: [], fuerza: [], flexibilidad: [] };
+  const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [] };
 
   // Signos vitales
   if (indicators.pa.sys && indicators.pa.dia && PA_TEXT[indicators.pa.status])
@@ -75,6 +75,21 @@ function buildReport(indicators) {
   if (fMod.length) r.fuerza.push(`Reducción moderada de fuerza en: ${fMod.join(', ')}. Se sugiere un programa de rehabilitación dirigido.`);
   if (fSev.length) r.fuerza.push(`Reducción significativa de fuerza en: ${fSev.join(', ')}. Requiere atención especializada a la brevedad.`);
 
+  // Prueba de Adams
+  const a = indicators.adams;
+  if (a.columna === 'normal')
+    r.adams.push('La prueba de Adams no mostró desviaciones en la columna vertebral, lo que indica una postura vertebral dentro de los parámetros normales.');
+  if (a.columna === 'escoliosis')
+    r.adams.push('La prueba de Adams evidenció una desviación lateral de la columna vertebral compatible con escoliosis. Se recomienda evaluación médica especializada.');
+  if (a.gibaToracica === 'derecha')
+    r.adams.push('Se observó prominencia costal en el hemitórax derecho durante la flexión anterior, hallazgo compatible con rotación vertebral torácica derecha.');
+  if (a.gibaToracica === 'izquierda')
+    r.adams.push('Se observó prominencia costal en el hemitórax izquierdo durante la flexión anterior, hallazgo compatible con rotación vertebral torácica izquierda.');
+  if (a.prominenciaLumbar === 'derecha')
+    r.adams.push('Se detectó prominencia de la musculatura paravertebral lumbar derecha, sugestiva de componente rotacional en la región lumbar.');
+  if (a.prominenciaLumbar === 'izquierda')
+    r.adams.push('Se detectó prominencia de la musculatura paravertebral lumbar izquierda, sugestiva de componente rotacional en la región lumbar.');
+
   // Flexibilidad
   const flNorm = [], flDef = [];
   Object.entries(indicators.flexibilidad).forEach(([k, v]) => {
@@ -89,7 +104,7 @@ function buildReport(indicators) {
 }
 
 export default function Home() {
-  const [patientData, setPatientData] = useState({ name: '', age: '', email: '', id: '', phone: '' });
+  const [patientData, setPatientData] = useState({ name: '', age: '', genero: '', email: '', id: '', phone: '' });
 
   const [indicators, setIndicators] = useState({
     pa: { sys: '', dia: '', status: '' },
@@ -107,6 +122,9 @@ export default function Home() {
       deltoides: '', estabilizadoresEsc: '', rotadoresHomb: '', zonaMedia: '',
       gluteos: '', isquiotibiales: '', cuadriceps: '', flexoresCadera: '', estabilizadoresTob: ''
     },
+    adams: {
+      columna: 'normal', gibaToracica: '', prominenciaLumbar: ''
+    },
     flexibilidad: {
       psoas: 'normal', cuadriceps: 'normal', isquiotibiales: 'normal'
     },
@@ -117,6 +135,15 @@ export default function Home() {
   const [today, setToday] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState('');
   const [specialist, setSpecialist] = useState({ nombre: '', rol: '' });
+
+  // Pre-evaluación
+  const [view, setView] = useState('pre-eval');           // 'pre-eval' | 'form'
+  const [formMode, setFormMode] = useState('new');        // 'new' | 'existing'
+  const [patientFound, setPatientFound] = useState(null);
+  const [cedulaBusqueda, setCedulaBusqueda] = useState('');
+  const [buscando, setBuscando] = useState(false);
+  const [pacienteNoEncontrado, setPacienteNoEncontrado] = useState(false);
+
   const pdfRef = useRef(null);
   const resetOnClose = useRef(false);
 
@@ -223,8 +250,48 @@ export default function Home() {
     setIndicators({ ...indicators, fuerza: { ...indicators.fuerza, [muscle]: value } });
   };
 
+  const handleAdams = (field, value) => {
+    const newAdams = { ...indicators.adams, [field]: value };
+    if (field === 'columna' && value === 'normal') {
+      newAdams.gibaToracica = '';
+      newAdams.prominenciaLumbar = '';
+    }
+    setIndicators({ ...indicators, adams: newAdams });
+  };
+
   const handleFlexibilidad = (muscle, value) => {
     setIndicators({ ...indicators, flexibilidad: { ...indicators.flexibilidad, [muscle]: value } });
+  };
+
+  const buscarPaciente = async () => {
+    if (!cedulaBusqueda.trim()) return;
+    setBuscando(true);
+    setPacienteNoEncontrado(false);
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const { data } = await supabase
+      .from('pacientes')
+      .select('*')
+      .eq('cedula', cedulaBusqueda.trim())
+      .single();
+    setBuscando(false);
+    if (data) {
+      setPatientFound(data);
+      setPatientData({
+        name:   data.nombre   || '',
+        age:    data.edad     || '',
+        genero: data.genero   || '',
+        email:  data.correo   || '',
+        id:     data.cedula   || '',
+        phone:  data.telefono || '',
+      });
+      setFormMode('existing');
+      setView('form');
+    } else {
+      setPacienteNoEncontrado(true);
+    }
   };
 
   const generatePDF = async () => {
@@ -363,14 +430,124 @@ export default function Home() {
               <span className="specialist-hola">Hola, </span><strong>{specialist.nombre}</strong>
               {specialist.rol && <span className="specialist-rol"> · {specialist.rol.charAt(0).toUpperCase() + specialist.rol.slice(1)}</span>}
             </span>
-            <form action="/api/auth/logout" method="POST">
-              <button type="submit" className="btn-logout">
-                <FiLogOut size={14} /> Cerrar sesión
-              </button>
-            </form>
+            <div className="specialist-topbar-actions">
+              {view === 'form' && (
+                <button
+                  className="topbar-home-btn"
+                  title="Ir al inicio"
+                  aria-label="Ir al inicio"
+                  onClick={() => {
+                    setPatientData({ name: '', age: '', genero: '', email: '', id: '', phone: '' });
+                    setView('pre-eval');
+                    setPatientFound(null);
+                    setCedulaBusqueda('');
+                  }}
+                >
+                  <FiHome size={16} />
+                </button>
+              )}
+              <form action="/api/auth/logout" method="POST">
+                <button type="submit" className="btn-logout">
+                  <FiLogOut size={14} /> Cerrar sesión
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
+
+      {/* ── Pantalla pre-evaluación ─────────────────────────────────────── */}
+      {view === 'pre-eval' && (
+        <div className="pre-eval-page">
+          <div className="pre-eval-specialist-card">
+            <div className="pre-eval-specialist-avatar" aria-hidden="true">
+              <FiUser size={44} />
+            </div>
+            <p className="pre-eval-welcome">
+              Hola, <strong>{specialist.nombre || 'Especialista'}</strong>
+            </p>
+            {specialist.rol && (
+              <p className="pre-eval-rol">
+                {specialist.rol.charAt(0).toUpperCase() + specialist.rol.slice(1)}
+              </p>
+            )}
+          </div>
+
+          <div className="pre-eval-options">
+            {/* Opción A: Nueva evaluación */}
+            <div className="pre-eval-option">
+              <div className="pre-eval-option-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+              </div>
+              <h3 className="pre-eval-option-title">Nueva evaluación</h3>
+              <p className="pre-eval-option-desc">El atleta no ha sido evaluado previamente por ningún especialista</p>
+              <button
+                className="btn btn-primary pre-eval-option-btn"
+                onClick={() => {
+                  setPatientData({ name: '', age: '', genero: '', email: '', id: '', phone: '' });
+                  setFormMode('new');
+                  setView('form');
+                }}
+              >
+                Comenzar
+              </button>
+            </div>
+
+            {/* Opción B: Continuar evaluación */}
+            <div className="pre-eval-option">
+              <div className="pre-eval-option-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+              <h3 className="pre-eval-option-title">Continuar evaluación</h3>
+              <p className="pre-eval-option-desc">El atleta ya fue evaluado por otro especialista</p>
+              <div className="pre-eval-search">
+                <label htmlFor="cedula-busqueda" className="sr-only">Número de cédula</label>
+                <input
+                  id="cedula-busqueda"
+                  type="text"
+                  placeholder="Número de cédula"
+                  value={cedulaBusqueda}
+                  onChange={e => { setCedulaBusqueda(e.target.value); setPacienteNoEncontrado(false); }}
+                  onKeyDown={e => e.key === 'Enter' && buscarPaciente()}
+                  aria-describedby={pacienteNoEncontrado ? 'cedula-error' : undefined}
+                />
+                <button
+                  className="btn btn-primary"
+                  onClick={buscarPaciente}
+                  disabled={buscando || !cedulaBusqueda.trim()}
+                  aria-label={buscando ? 'Buscando paciente...' : 'Buscar paciente por cédula'}
+                >
+                  {buscando ? (
+                    <svg className="login-spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                  ) : 'Buscar'}
+                </button>
+              </div>
+              {pacienteNoEncontrado && (
+                <div className="pre-eval-not-found" id="cedula-error" role="alert">
+                  <p>Paciente no encontrado con esa cédula.</p>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => { setFormMode('new'); setView('form'); }}
+                  >
+                    Crear nueva evaluación
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Formulario de evaluación ─────────────────────────────────────── */}
+      {view === 'form' && (
+      <>
 
       <header className="main-header">
         <div className="header-logo-area">
@@ -380,7 +557,22 @@ export default function Home() {
         <p>Completa el formulario de evaluación para generar el informe del atleta</p>
       </header>
 
-      <div className="card">
+      {/* Tarjeta de paciente existente */}
+      {formMode === 'existing' && patientFound && (
+        <div className="patient-info-bar">
+          <div className="patient-info-data">
+            <FiUser size={16} />
+            <strong>{patientFound.nombre}</strong>
+            <span className="patient-info-sep">·</span>
+            <span>Cédula: {patientFound.cedula}</span>
+            {patientFound.edad && <><span className="patient-info-sep">·</span><span>{patientFound.edad} años</span></>}
+            {patientFound.correo && <><span className="patient-info-sep">·</span><span>{patientFound.correo}</span></>}
+            {patientFound.telefono && <><span className="patient-info-sep">·</span><span>{patientFound.telefono}</span></>}
+          </div>
+        </div>
+      )}
+
+      {formMode === 'new' && <div className="card">
         <div className="card-header">
           <span className="section-number"><FiUser /></span>
           <h2>Datos del Paciente</h2>
@@ -399,6 +591,14 @@ export default function Home() {
             <input type="number" placeholder="Edad" value={patientData.age} onChange={(e) => setPatientData({ ...patientData, age: e.target.value })} />
           </div>
           <div className="form-group">
+            <label>Género</label>
+            <select value={patientData.genero} onChange={(e) => setPatientData({ ...patientData, genero: e.target.value })}>
+              <option value="">Seleccionar...</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+            </select>
+          </div>
+          <div className="form-group">
             <label>Correo Electrónico</label>
             <input type="email" placeholder="correo@paciente.com" value={patientData.email} onChange={(e) => setPatientData({ ...patientData, email: e.target.value })} />
           </div>
@@ -407,7 +607,7 @@ export default function Home() {
             <input type="tel" placeholder="Número de teléfono" value={patientData.phone} onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })} />
           </div>
         </div>
-      </div>
+      </div>}
 
       <div className="card">
         <div className="card-header">
@@ -487,6 +687,38 @@ export default function Home() {
 
       <div className="card">
         <div className="card-header">
+          <span className="section-number"><FiAlignCenter /></span>
+          <h2>Prueba de Adams</h2>
+        </div>
+        <div className="form-group" style={{ marginBottom: indicators.adams.columna === 'escoliosis' ? '1rem' : 0 }}>
+          <label>Columna vertebral</label>
+          <div className="status-selector adams-full">
+            <button className={`status-btn ${indicators.adams.columna === 'normal' ? 'active normal' : ''}`} onClick={() => handleAdams('columna', 'normal')}>Normal (-)</button>
+            <button className={`status-btn ${indicators.adams.columna === 'escoliosis' ? 'active exceso' : ''}`} onClick={() => handleAdams('columna', 'escoliosis')}>Escoliosis (+)</button>
+          </div>
+        </div>
+        {indicators.adams.columna === 'escoliosis' && (
+          <div className="adams-sub-grid">
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Giba torácica</label>
+              <div className="status-selector adams-full">
+                <button className={`status-btn ${indicators.adams.gibaToracica === 'derecha' ? 'active deficit' : ''}`} onClick={() => handleAdams('gibaToracica', 'derecha')}>Derecha</button>
+                <button className={`status-btn ${indicators.adams.gibaToracica === 'izquierda' ? 'active deficit' : ''}`} onClick={() => handleAdams('gibaToracica', 'izquierda')}>Izquierda</button>
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Prominencia lumbar</label>
+              <div className="status-selector adams-full">
+                <button className={`status-btn ${indicators.adams.prominenciaLumbar === 'derecha' ? 'active deficit' : ''}`} onClick={() => handleAdams('prominenciaLumbar', 'derecha')}>Derecha</button>
+                <button className={`status-btn ${indicators.adams.prominenciaLumbar === 'izquierda' ? 'active deficit' : ''}`} onClick={() => handleAdams('prominenciaLumbar', 'izquierda')}>Izquierda</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="card-header">
           <span className="section-number"><FiRotateCw /></span>
           <h2>Flexibilidad</h2>
         </div>
@@ -552,6 +784,7 @@ export default function Home() {
               { title: 'Signos Vitales', items: report.vitales },
               { title: 'Rangos Articulares', items: report.rangos },
               { title: 'Fuerza Muscular', items: report.fuerza },
+              { title: 'Prueba de Adams', items: report.adams },
               { title: 'Flexibilidad', items: report.flexibilidad },
             ];
             return sections.map(({ title, items }) =>
@@ -590,6 +823,8 @@ export default function Home() {
 
         </div>
       </div>
+      </>
+      )}
     </div >
   );
 }

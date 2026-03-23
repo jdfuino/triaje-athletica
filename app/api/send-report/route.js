@@ -57,12 +57,22 @@ export async function POST(req) {
 
         // Guardar evaluación en Supabase (no bloquea el flujo si falla)
         if (patientData && indicators) {
+            // Upsert datos del paciente en tabla pacientes
+            if (patientData.id) {
+                const { error: patError } = await supabaseAdmin.from('pacientes').upsert({
+                    cedula:   patientData.id,
+                    nombre:   patientData.name   || null,
+                    correo:   patientData.email  || null,
+                    telefono: patientData.phone  || null,
+                    edad:     patientData.age    || null,
+                    genero:   patientData.genero || null,
+                }, { onConflict: 'cedula' });
+                if (patError) console.error('Supabase pacientes upsert error:', patError.message);
+            }
+
+            // Insert evaluación clínica (sin datos del paciente)
             const { error: dbError } = await supabaseAdmin.from('evaluacion_fisica').insert([{
                 cedula: patientData.id || null,
-                nombre: patientData.name || null,
-                edad: patientData.age ? parseInt(patientData.age) : null,
-                email: patientData.email || null,
-                telefono: patientData.phone || null,
                 fecha: new Date().toISOString().split('T')[0],
                 pa_sys: indicators.pa?.sys ? parseInt(indicators.pa.sys) : null,
                 pa_dia: indicators.pa?.dia ? parseInt(indicators.pa.dia) : null,
@@ -86,6 +96,9 @@ export async function POST(req) {
                 fuerza_cuadriceps: indicators.fuerza?.cuadriceps ? parseInt(indicators.fuerza.cuadriceps) : null,
                 fuerza_flexores_cadera: indicators.fuerza?.flexoresCadera ? parseInt(indicators.fuerza.flexoresCadera) : null,
                 fuerza_estabilizadores_tob: indicators.fuerza?.estabilizadoresTob ? parseInt(indicators.fuerza.estabilizadoresTob) : null,
+                adams_columna: indicators.adams?.columna || null,
+                adams_giba_toracica: indicators.adams?.gibaToracica || null,
+                adams_prominencia_lumbar: indicators.adams?.prominenciaLumbar || null,
                 flex_psoas: indicators.flexibilidad?.psoas || null,
                 flex_cuadriceps: indicators.flexibilidad?.cuadriceps || null,
                 flex_isquiotibiales: indicators.flexibilidad?.isquiotibiales || null,
