@@ -371,6 +371,15 @@ export default function Home() {
         .filter(px => px > 0)
         .sort((a, b) => a - b);
 
+      // Pre-calculate banner position in canvas pixels for the link annotation
+      const bannerEl = pdfRef.current.querySelector('.pdf-partner-banner');
+      let bannerTopPx = null, bannerHeightPx = null;
+      if (bannerEl) {
+        const r = bannerEl.getBoundingClientRect();
+        bannerTopPx = Math.round((r.top - containerTop) * scale);
+        bannerHeightPx = Math.round(r.height * scale);
+      }
+
       let yPx = 0;
       let isFirstPage = true;
 
@@ -402,6 +411,13 @@ export default function Home() {
         const sliceHeightMm = sliceHeightPx / pxPerMm;
 
         pdf.addImage(sliceImgData, 'JPEG', margin, margin, contentWidth, sliceHeightMm);
+
+        // Add clickable link over the banner if it falls on this page
+        if (bannerTopPx !== null && bannerTopPx < yPx + sliceHeightPx && bannerTopPx + bannerHeightPx > yPx) {
+          const offsetInPageMm = margin + Math.max(bannerTopPx - yPx, 0) / pxPerMm;
+          const linkHeightMm = bannerHeightPx / pxPerMm;
+          pdf.link(margin, offsetInPageMm, contentWidth, linkHeightMm, { url: 'https://fenixsalud.com.ve/' });
+        }
 
         yPx += sliceHeightPx;
       }
