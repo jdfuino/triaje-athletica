@@ -146,7 +146,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [today, setToday] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState('');
-  const [bannerDataUrl, setBannerDataUrl] = useState('');
   const [specialist, setSpecialist] = useState({ nombre: '', rol: '' });
 
   // Pre-evaluación
@@ -173,18 +172,7 @@ export default function Home() {
     };
     img.src = '/SilverGame_informe.png';
 
-    const banner = new Image();
-    banner.crossOrigin = 'anonymous';
-    banner.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = banner.width;
-      c.height = banner.height;
-      c.getContext('2d').drawImage(banner, 0, 0);
-      setBannerDataUrl(c.toDataURL('image/jpeg'));
-    };
-    banner.src = '/clinica_aliada_banner.jpg';
-
-    const supabase = createBrowserClient(
+const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
@@ -951,11 +939,9 @@ export default function Home() {
           </div>
 
           {/* Banner clínica aliada */}
-          {bannerDataUrl && (
-            <div className="pdf-partner-banner">
-              <img src={bannerDataUrl} alt="Clínica aliada" />
-            </div>
-          )}
+          <div className="pdf-partner-banner">
+            <img src="/clinica_aliada_banner.jpg" alt="Clínica aliada" />
+          </div>
 
         </div>
       </div>
