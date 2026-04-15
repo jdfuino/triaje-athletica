@@ -146,6 +146,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [today, setToday] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState('');
+  const [bannerDataUrl, setBannerDataUrl] = useState('');
   const [specialist, setSpecialist] = useState({ nombre: '', rol: '' });
 
   // Pre-evaluación
@@ -171,6 +172,17 @@ export default function Home() {
       setLogoDataUrl(c.toDataURL('image/png'));
     };
     img.src = '/SilverGame_informe.png';
+
+    const banner = new Image();
+    banner.crossOrigin = 'anonymous';
+    banner.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = banner.width;
+      c.height = banner.height;
+      c.getContext('2d').drawImage(banner, 0, 0);
+      setBannerDataUrl(c.toDataURL('image/jpeg'));
+    };
+    banner.src = '/clinica_aliada_banner.jpg';
 
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -352,7 +364,7 @@ export default function Home() {
       const scale = canvas.width / pdfRef.current.offsetWidth;
       const containerTop = pdfRef.current.getBoundingClientRect().top;
       const sectionEls = pdfRef.current.querySelectorAll(
-        '.pdf-header, .pdf-patient-box, .pdf-nl-section, .pdf-signatures'
+        '.pdf-header, .pdf-patient-box, .pdf-nl-section, .pdf-signatures, .pdf-partner-banner'
       );
       const breakPoints = Array.from(sectionEls)
         .map(el => Math.round((el.getBoundingClientRect().top - containerTop) * scale))
@@ -906,7 +918,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* Signatures */}
+          {/* Firmas */}
           <div className="pdf-signatures">
             <div className="signature-box">
               <div className="signature-img-container">
@@ -921,6 +933,13 @@ export default function Home() {
               <div className="signature-line">Sello Médico</div>
             </div>
           </div>
+
+          {/* Banner clínica aliada */}
+          {bannerDataUrl && (
+            <div className="pdf-partner-banner">
+              <img src={bannerDataUrl} alt="Clínica aliada" />
+            </div>
+          )}
 
         </div>
       </div>

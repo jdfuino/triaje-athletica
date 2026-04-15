@@ -651,6 +651,16 @@ textarea:focus {
   object-fit: contain;
 }
 
+.pdf-partner-banner {
+  margin-top: 40px;
+}
+
+.pdf-partner-banner img {
+  width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 .stamp-img {
   max-height: 80px;
   max-width: 150px;
