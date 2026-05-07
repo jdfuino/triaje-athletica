@@ -58,6 +58,8 @@ export async function POST(req) {
                 flex_isquiotibiales:        indicators.flexibilidad?.isquiotibiales || null,
                 sts_reps:                   indicators.sts?.reps ? parseInt(indicators.sts.reps) : null,
                 sts_status:                 indicators.sts?.status || null,
+                dinamometro_derecha:        indicators.dinamometro?.derecha   || null,
+                dinamometro_izquierda:      indicators.dinamometro?.izquierda || null,
                 observaciones:              indicators.observations || null,
                 specialist_id:              specialist?.id     || null,
                 specialist_nombre:          specialist?.nombre || null,

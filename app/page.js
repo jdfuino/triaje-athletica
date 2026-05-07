@@ -100,7 +100,7 @@ const STS_TEXT = {
 };
 
 function buildReport(indicators) {
-  const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [], sts: [] };
+  const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [], sts: [], dinamometro: [] };
 
   // Signos vitales
   if (indicators.pa.sys && indicators.pa.dia && PA_TEXT[indicators.pa.status])
@@ -168,6 +168,24 @@ function buildReport(indicators) {
   if (sts?.reps && sts?.status && STS_TEXT[sts.status])
     r.sts.push(STS_TEXT[sts.status](sts.reps));
 
+  // Dinamómetro
+  const d = indicators.dinamometro;
+  if (d?.derecha || d?.izquierda) {
+    const ambas = d.derecha && d.izquierda;
+    if (ambas && d.derecha === 'normal' && d.izquierda === 'normal')
+      r.dinamometro.push('La fuerza de prensión manual evaluada con dinamómetro es normal en ambas manos, lo que indica una adecuada capacidad funcional de los miembros superiores.');
+    else if (ambas && d.derecha === 'deficit' && d.izquierda === 'deficit')
+      r.dinamometro.push('La fuerza de prensión manual evaluada con dinamómetro presenta déficit en ambas manos. Se recomienda un programa de fortalecimiento de miembro superior.');
+    else if (ambas && d.derecha === 'normal' && d.izquierda === 'deficit')
+      r.dinamometro.push('La fuerza de prensión es normal en mano derecha y presenta déficit en mano izquierda. Se recomienda ejercicio de fortalecimiento focalizado en el lado izquierdo.');
+    else if (ambas && d.derecha === 'deficit' && d.izquierda === 'normal')
+      r.dinamometro.push('La fuerza de prensión presenta déficit en mano derecha y es normal en mano izquierda. Se recomienda ejercicio de fortalecimiento focalizado en el lado derecho.');
+    else if (d.derecha)
+      r.dinamometro.push(`Fuerza de prensión mano derecha: ${d.derecha === 'normal' ? 'dentro de los parámetros normales' : 'con déficit detectado'}.`);
+    else if (d.izquierda)
+      r.dinamometro.push(`Fuerza de prensión mano izquierda: ${d.izquierda === 'normal' ? 'dentro de los parámetros normales' : 'con déficit detectado'}.`);
+  }
+
   return r;
 }
 
@@ -197,6 +215,7 @@ export default function Home() {
       psoas: 'normal', cuadriceps: 'normal', isquiotibiales: 'normal'
     },
     sts: { reps: '', status: '' },
+    dinamometro: { derecha: '', izquierda: '' },
     observations: ''
   });
 
@@ -1040,6 +1059,33 @@ const supabase = createBrowserClient(
 
       <div className="card">
         <div className="card-header">
+          <span className="section-number"><FiActivity /></span>
+          <h2>Fuerza de Presión con Dinamómetro</h2>
+        </div>
+        <div className="flex-col gap-4">
+          {[
+            { key: 'derecha',   label: 'Mano Derecha' },
+            { key: 'izquierda', label: 'Mano Izquierda' },
+          ].map(({ key, label }) => (
+            <div key={key} className="form-group" style={{ marginBottom: 0 }}>
+              <label>{label}</label>
+              <div className="status-selector adams-full">
+                <button
+                  className={`status-btn ${indicators.dinamometro[key] === 'normal' ? 'active normal' : ''}`}
+                  onClick={() => setIndicators({ ...indicators, dinamometro: { ...indicators.dinamometro, [key]: 'normal' } })}
+                >Normal</button>
+                <button
+                  className={`status-btn ${indicators.dinamometro[key] === 'deficit' ? 'active deficit' : ''}`}
+                  onClick={() => setIndicators({ ...indicators, dinamometro: { ...indicators.dinamometro, [key]: 'deficit' } })}
+                >Déficit</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
           <span className="section-number"><FiFileText /></span>
           <h2>Observaciones Adicionales</h2>
         </div>
@@ -1090,6 +1136,7 @@ const supabase = createBrowserClient(
               { title: 'Prueba de Adams', items: report.adams },
               { title: 'Flexibilidad', items: report.flexibilidad },
               { title: 'Prueba Funcional (Sit-to-Stand)', items: report.sts },
+              { title: 'Fuerza de Presión (Dinamómetro)', items: report.dinamometro },
             ];
             return sections.map(({ title, items }) =>
               items.length > 0 && (
