@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 export async function POST(req) {
     try {
         const body = await req.json();
-        const { patientData, indicators, specialist } = body;
+        const { evaluacionId, patientData, indicators, specialist } = body;
 
         if (!patientData?.id) {
             return NextResponse.json({ error: 'Cédula del paciente requerida' }, { status: 400 });
@@ -21,10 +21,11 @@ export async function POST(req) {
         }, { onConflict: 'cedula' });
         if (patError) console.error('Supabase pacientes upsert error:', patError.message);
 
-        // Insert evaluación física, retorna el UUID generado
-        const { data: evalData, error: dbError } = await supabaseAdmin
+        // Insert evaluación física con UUID generado en cliente
+        const { error: dbError } = await supabaseAdmin
             .from('evaluacion_fisica')
             .insert([{
+                id:                         evaluacionId,
                 cedula:                     patientData.id || null,
                 fecha:                      new Date().toISOString().split('T')[0],
                 pa_sys:                     indicators.pa?.sys ? parseInt(indicators.pa.sys) : null,
@@ -61,16 +62,14 @@ export async function POST(req) {
                 specialist_id:              specialist?.id     || null,
                 specialist_nombre:          specialist?.nombre || null,
                 specialist_rol:             specialist?.rol    || null,
-            }])
-            .select('id')
-            .single();
+            }]);
 
         if (dbError) {
             console.error('Supabase insert error:', dbError.message);
             return NextResponse.json({ error: dbError.message }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true, evaluacionId: evalData.id });
+        return NextResponse.json({ success: true, evaluacionId });
 
     } catch (error) {
         console.error('Error guardando evaluación:', error);

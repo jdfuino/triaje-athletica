@@ -423,15 +423,18 @@ const supabase = createBrowserClient(
 
   const guardarEvaluacion = async () => {
     if (evaluacionId) return; // Ya guardado en esta sesión
+    const newId = crypto.randomUUID();
     try {
       const res = await fetch('/api/save-evaluation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientData, indicators, specialist }),
+        body: JSON.stringify({ evaluacionId: newId, patientData, indicators, specialist }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setEvaluacionId(data.evaluacionId);
+        setEvaluacionId(newId);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.error('Error guardando evaluación:', err);
       }
     } catch (e) {
       console.error('Error guardando evaluación:', e);
