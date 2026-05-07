@@ -378,6 +378,13 @@ textarea:focus {
   height: 3rem;
 }
 
+.sts-norm-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--secondary);
+  font-weight: 600;
+}
+
 @media (max-width: 480px) {
   .sts-countdown { font-size: 3rem; }
   .sts-timer-btns { flex-direction: column; width: 100%; }

@@ -6,6 +6,40 @@ import jsPDF from 'jspdf';
 import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter, FiPlay, FiPause } from 'react-icons/fi';
 import { createBrowserClient } from '@supabase/ssr';
 
+// ─── STS Normative Values (Otto-Yáñez et al. 2025, Chilean population, P25) ─
+// Below P25 = Déficit. Editar aquí para actualizar valores de referencia.
+const STS_NORMS = {
+  femenino: [
+    { min: 18, max: 29, minReps: 33 },
+    { min: 30, max: 39, minReps: 33 },
+    { min: 40, max: 49, minReps: 28 },
+    { min: 50, max: 59, minReps: 26 },
+    { min: 60, max: 69, minReps: 23 },
+    { min: 70, max: 80, minReps: 21 },
+  ],
+  masculino: [
+    { min: 18, max: 29, minReps: 32 },
+    { min: 30, max: 39, minReps: 31 },
+    { min: 40, max: 49, minReps: 30 },
+    { min: 50, max: 59, minReps: 28 },
+    { min: 60, max: 69, minReps: 23 },
+    { min: 70, max: 80, minReps: 20 },
+  ],
+};
+
+function getStsNorm(age, genero) {
+  const key = genero?.toLowerCase() === 'femenino' ? 'femenino' : 'masculino';
+  const age_n = parseInt(age);
+  if (!age_n) return null;
+  return STS_NORMS[key].find(n => age_n >= n.min && age_n <= n.max) || null;
+}
+
+function calcStsStatus(reps, age, genero) {
+  const norm = getStsNorm(age, genero);
+  if (!norm || reps === '' || reps === null) return '';
+  return parseInt(reps) >= norm.minReps ? 'normal' : 'deficit';
+}
+
 // ─── Natural Language Report Builder ────────────────────────────────────────
 
 const PA_TEXT = {
@@ -857,8 +891,20 @@ const supabase = createBrowserClient(
             <input
               type="number" min="0" placeholder="Nº repeticiones"
               value={indicators.sts.reps}
-              onChange={e => setIndicators({ ...indicators, sts: { ...indicators.sts, reps: e.target.value } })}
+              onChange={e => {
+                const reps = e.target.value;
+                const autoStatus = calcStsStatus(reps, patientData.age, patientData.genero);
+                setIndicators({ ...indicators, sts: { reps, status: autoStatus || indicators.sts.status } });
+              }}
             />
+            {(() => {
+              const norm = getStsNorm(patientData.age, patientData.genero);
+              return norm ? (
+                <p className="sts-norm-hint">
+                  Referencia ({patientData.genero || 'N/A'}, {patientData.age} años): ≥ {norm.minReps} reps para Normal
+                </p>
+              ) : null;
+            })()}
           </div>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label>Resultado</label>
