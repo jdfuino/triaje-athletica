@@ -215,7 +215,7 @@ export default function Home() {
       psoas: 'normal', cuadriceps: 'normal', isquiotibiales: 'normal'
     },
     sts: { reps: '', status: '' },
-    dinamometro: { derecha: '', izquierda: '' },
+    dinamometro: { derecha: 'normal', izquierda: 'normal' },
     observations: ''
   });
 
@@ -1067,7 +1067,7 @@ const supabase = createBrowserClient(
             { key: 'derecha',   label: 'Mano Derecha' },
             { key: 'izquierda', label: 'Mano Izquierda' },
           ].map(({ key, label }) => (
-            <div key={key} className="form-group" style={{ marginBottom: 0 }}>
+            <div key={key} className="form-group" style={{ marginBottom: '0.75rem' }}>
               <label>{label}</label>
               <div className="status-selector adams-full">
                 <button
