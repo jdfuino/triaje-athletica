@@ -147,6 +147,7 @@ export default function Home() {
   const [today, setToday] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState('');
   const [specialist, setSpecialist] = useState({ nombre: '', rol: '' });
+  const [evaluacionId, setEvaluacionId] = useState(null);
 
   // Pre-evaluación
   const [view, setView] = useState('pre-eval');           // 'pre-eval' | 'form'
@@ -420,9 +421,27 @@ const supabase = createBrowserClient(
     }
   };
 
+  const guardarEvaluacion = async () => {
+    if (evaluacionId) return; // Ya guardado en esta sesión
+    try {
+      const res = await fetch('/api/save-evaluation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientData, indicators, specialist }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEvaluacionId(data.evaluacionId);
+      }
+    } catch (e) {
+      console.error('Error guardando evaluación:', e);
+    }
+  };
+
   const downloadPDF = async () => {
     const pdf = await generatePDF();
     if (pdf) {
+      await guardarEvaluacion();
       pdf.save(`Evaluacion_${patientData.name || 'Paciente'}.pdf`);
       showModal("success", "Éxito", "El PDF se ha descargado correctamente.");
     }
@@ -436,6 +455,7 @@ const supabase = createBrowserClient(
     if (!pdf) { setLoading(false); closeModal(); return; }
 
     try {
+      await guardarEvaluacion();
       const base64PDF = pdf.output('datauristring').split(',')[1];
       const res = await fetch('/api/send-report', {
         method: 'POST',
@@ -444,10 +464,6 @@ const supabase = createBrowserClient(
           email: patientData.email,
           patientName: patientData.name,
           pdfBase64: base64PDF,
-          patientData,
-          indicators,
-          fecha: today,
-          specialist,
         })
       });
       if (res.ok) {
