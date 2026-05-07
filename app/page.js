@@ -182,6 +182,7 @@ export default function Home() {
   const [logoDataUrl, setLogoDataUrl] = useState('');
   const [specialist, setSpecialist] = useState({ nombre: '', rol: '' });
   const [evaluacionId, setEvaluacionId] = useState(null);
+  const [showStsRef, setShowStsRef] = useState(false);
 
   // Pre-evaluación
   const [view, setView] = useState('pre-eval');           // 'pre-eval' | 'form'
@@ -852,7 +853,58 @@ const supabase = createBrowserClient(
             </svg>
           </span>
           <h2>Sit-to-Stand Test (60 seg)</h2>
+          <button className="sts-ref-btn" onClick={() => setShowStsRef(true)} title="Ver tabla de referencia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Ver referencia
+          </button>
         </div>
+
+        {/* Modal tabla de referencia STS */}
+        {showStsRef && (
+          <div className="sts-ref-overlay" onClick={() => setShowStsRef(false)}>
+            <div className="sts-ref-modal" onClick={e => e.stopPropagation()}>
+              <div className="sts-ref-modal-header">
+                <div>
+                  <h3>Valores de referencia — STS 1 minuto</h3>
+                  <p>Otto-Yáñez et al. 2025 · Población latinoamericana · PLoS One</p>
+                </div>
+                <button className="sts-ref-close" onClick={() => setShowStsRef(false)}>✕</button>
+              </div>
+              <div className="sts-ref-table-wrap">
+                <table className="sts-ref-table">
+                  <thead>
+                    <tr>
+                      <th rowSpan="2">Grupo etario</th>
+                      <th colSpan="5">Mujeres</th>
+                      <th colSpan="5">Hombres</th>
+                    </tr>
+                    <tr>
+                      <th>P2.5</th><th className="sts-p25">P25</th><th>P50</th><th>P75</th><th>P97.5</th>
+                      <th>P2.5</th><th className="sts-p25">P25</th><th>P50</th><th>P75</th><th>P97.5</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { g: '18–29', f: [28,33,38,45,61], m: [27,32,38,47,61] },
+                      { g: '30–39', f: [23,33,38,44,60], m: [26,31,39,47,55] },
+                      { g: '40–49', f: [22,28,33,38,47], m: [26,30,30,37,58] },
+                      { g: '50–59', f: [20,26,32,37,53], m: [20,28,32,39,58] },
+                      { g: '60–69', f: [17,23,28,33,49], m: [15,23,25,30,37] },
+                      { g: '70–80', f: [17,21,24,30,47], m: [15,20,23,26,31] },
+                    ].map(row => (
+                      <tr key={row.g}>
+                        <td className="sts-ref-group">{row.g}</td>
+                        {row.f.map((v, i) => <td key={i} className={i === 1 ? 'sts-p25' : ''}>{v}</td>)}
+                        {row.m.map((v, i) => <td key={i} className={i === 1 ? 'sts-p25' : ''}>{v}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="sts-ref-note">El umbral P25 se usa como mínimo para clasificar <strong>Normal</strong>. Por debajo de P25 = <strong>Déficit</strong>.</p>
+            </div>
+          </div>
+        )}
         <p className="mb-3" style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
           Inicia el cronómetro y cuenta las repeticiones del atleta. Al finalizar el tiempo, registra el número de repeticiones completadas y selecciona el resultado correspondiente.
         </p>

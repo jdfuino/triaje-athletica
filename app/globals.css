@@ -385,6 +385,135 @@ textarea:focus {
   font-weight: 600;
 }
 
+.sts-ref-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--secondary);
+  background: transparent;
+  color: var(--secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.sts-ref-btn:hover {
+  background: var(--secondary);
+  color: #fff;
+}
+
+/* ── STS Reference Modal ─────────────────────────────────────────────────── */
+.sts-ref-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.sts-ref-modal {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.sts-ref-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.sts-ref-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 0.2rem;
+}
+.sts-ref-modal-header p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.sts-ref-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.sts-ref-close:hover { background: #f1f5f9; }
+
+.sts-ref-table-wrap {
+  overflow-x: auto;
+}
+
+.sts-ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.sts-ref-table th, .sts-ref-table td {
+  text-align: center;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #e2e8f0;
+}
+.sts-ref-table thead th {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.sts-ref-table thead tr:first-child th:nth-child(2) {
+  background: #2a5f8f;
+}
+.sts-ref-table thead tr:first-child th:nth-child(3) {
+  background: #3a7a6a;
+}
+.sts-ref-table tbody tr:nth-child(even) td {
+  background: #f8fafc;
+}
+.sts-ref-table td.sts-p25 {
+  font-weight: 700;
+  color: var(--primary);
+  background: #e0f2fe !important;
+}
+.sts-ref-table th.sts-p25 {
+  background: #1a8fa0 !important;
+}
+.sts-ref-table td.sts-ref-group {
+  font-weight: 700;
+  color: var(--primary);
+  text-align: left;
+  background: #f1f5f9 !important;
+}
+
+.sts-ref-note {
+  margin: 1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 0.6rem 0.75rem;
+  background: #f0fdf4;
+  border-left: 3px solid var(--success);
+  border-radius: 0 6px 6px 0;
+}
+
 @media (max-width: 480px) {
   .sts-countdown { font-size: 3rem; }
   .sts-timer-btns { flex-direction: column; width: 100%; }
