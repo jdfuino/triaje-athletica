@@ -6,26 +6,35 @@ import jsPDF from 'jspdf';
 import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter, FiPlay, FiPause } from 'react-icons/fi';
 import { createBrowserClient } from '@supabase/ssr';
 
-// ─── STS Normative Values (Otto-Yáñez et al. 2025, Chilean population, P25) ─
-// Below P25 = Déficit. Editar aquí para actualizar valores de referencia.
+// ─── STS Normative Values (Otto-Yáñez et al. 2025, Chilean population) ────────
+// p = [P2.5, P25, P50, P75, P97.5]. P25 is the Normal threshold.
 const STS_NORMS = {
   femenino: [
-    { min: 18, max: 29, minReps: 33 },
-    { min: 30, max: 39, minReps: 33 },
-    { min: 40, max: 49, minReps: 28 },
-    { min: 50, max: 59, minReps: 26 },
-    { min: 60, max: 69, minReps: 23 },
-    { min: 70, max: 80, minReps: 21 },
+    { min: 18, max: 29, label: '18–29', p: [28, 33, 38, 45, 61] },
+    { min: 30, max: 39, label: '30–39', p: [23, 33, 38, 44, 60] },
+    { min: 40, max: 49, label: '40–49', p: [22, 28, 33, 38, 47] },
+    { min: 50, max: 59, label: '50–59', p: [20, 26, 32, 37, 53] },
+    { min: 60, max: 69, label: '60–69', p: [17, 23, 28, 33, 49] },
+    { min: 70, max: 80, label: '70–80', p: [17, 21, 24, 30, 47] },
   ],
   masculino: [
-    { min: 18, max: 29, minReps: 32 },
-    { min: 30, max: 39, minReps: 31 },
-    { min: 40, max: 49, minReps: 30 },
-    { min: 50, max: 59, minReps: 28 },
-    { min: 60, max: 69, minReps: 23 },
-    { min: 70, max: 80, minReps: 20 },
+    { min: 18, max: 29, label: '18–29', p: [27, 32, 38, 47, 61] },
+    { min: 30, max: 39, label: '30–39', p: [26, 31, 39, 47, 55] },
+    { min: 40, max: 49, label: '40–49', p: [26, 30, 30, 37, 58] },
+    { min: 50, max: 59, label: '50–59', p: [20, 28, 32, 39, 58] },
+    { min: 60, max: 69, label: '60–69', p: [15, 23, 25, 30, 37] },
+    { min: 70, max: 80, label: '70–80', p: [15, 20, 23, 26, 31] },
   ],
 };
+
+const STS_BANDS = [
+  { key: '<P2.5', label: '< P2.5', color: '#dc2626', bg: '#fee2e2', colIdx: -1, text: 'Rendimiento muy bajo — se recomienda evaluación médica especializada' },
+  { key: 'P2.5',  label: 'P2.5',   color: '#ef4444', bg: '#fee2e2', colIdx:  0, text: 'Bajo rendimiento — se recomienda programa de ejercicios supervisado' },
+  { key: 'P25',   label: 'P25',    color: '#f59e0b', bg: '#fef3c7', colIdx:  1, text: 'Rendimiento normal bajo — en el límite inferior del rango esperado' },
+  { key: 'P50',   label: 'P50',    color: '#10b981', bg: '#d1fae5', colIdx:  2, text: 'Rendimiento normal — dentro del rango esperado para su grupo etario' },
+  { key: 'P75',   label: 'P75',    color: '#06b6d4', bg: '#cffafe', colIdx:  3, text: 'Buen rendimiento — por encima del promedio para su grupo etario' },
+  { key: 'P97.5', label: 'P97.5',  color: '#05254F', bg: '#dbeafe', colIdx:  4, text: 'Rendimiento excelente — en el percentil superior para su grupo etario' },
+];
 
 function getStsNorm(age, genero) {
   const key = genero?.toLowerCase() === 'femenino' ? 'femenino' : 'masculino';
@@ -37,7 +46,23 @@ function getStsNorm(age, genero) {
 function calcStsStatus(reps, age, genero) {
   const norm = getStsNorm(age, genero);
   if (!norm || reps === '' || reps === null) return '';
-  return parseInt(reps) >= norm.minReps ? 'normal' : 'deficit';
+  return parseInt(reps) >= norm.p[1] ? 'normal' : 'deficit';
+}
+
+function getStsPercentile(reps, age, genero) {
+  const norm = getStsNorm(age, genero);
+  if (!norm || reps === '' || reps === null || reps === undefined) return null;
+  const r = parseInt(reps);
+  if (isNaN(r) || r < 0) return null;
+  const [p2_5, p25, p50, p75, p97_5] = norm.p;
+  let band;
+  if      (r < p2_5)  band = STS_BANDS[0];
+  else if (r < p25)   band = STS_BANDS[1];
+  else if (r < p50)   band = STS_BANDS[2];
+  else if (r < p75)   band = STS_BANDS[3];
+  else if (r < p97_5) band = STS_BANDS[4];
+  else                band = STS_BANDS[5];
+  return { norm, band };
 }
 
 // ─── Natural Language Report Builder ────────────────────────────────────────
@@ -884,20 +909,16 @@ const supabase = createBrowserClient(
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { g: '18–29', f: [28,33,38,45,61], m: [27,32,38,47,61] },
-                      { g: '30–39', f: [23,33,38,44,60], m: [26,31,39,47,55] },
-                      { g: '40–49', f: [22,28,33,38,47], m: [26,30,30,37,58] },
-                      { g: '50–59', f: [20,26,32,37,53], m: [20,28,32,39,58] },
-                      { g: '60–69', f: [17,23,28,33,49], m: [15,23,25,30,37] },
-                      { g: '70–80', f: [17,21,24,30,47], m: [15,20,23,26,31] },
-                    ].map(row => (
-                      <tr key={row.g}>
-                        <td className="sts-ref-group">{row.g}</td>
-                        {row.f.map((v, i) => <td key={i} className={i === 1 ? 'sts-p25' : ''}>{v}</td>)}
-                        {row.m.map((v, i) => <td key={i} className={i === 1 ? 'sts-p25' : ''}>{v}</td>)}
-                      </tr>
-                    ))}
+                    {STS_NORMS.femenino.map((rowF, ri) => {
+                      const rowM = STS_NORMS.masculino[ri];
+                      return (
+                        <tr key={rowF.label}>
+                          <td className="sts-ref-group">{rowF.label}</td>
+                          {rowF.p.map((v, i) => <td key={i} className={i === 1 ? 'sts-p25' : ''}>{v}</td>)}
+                          {rowM.p.map((v, i) => <td key={i} className={i === 1 ? 'sts-p25' : ''}>{v}</td>)}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -953,7 +974,7 @@ const supabase = createBrowserClient(
               const norm = getStsNorm(patientData.age, patientData.genero);
               return norm ? (
                 <p className="sts-norm-hint">
-                  Referencia ({patientData.genero || 'N/A'}, {patientData.age} años): ≥ {norm.minReps} reps para Normal
+                  Referencia ({patientData.genero || 'N/A'}, {patientData.age} años): ≥ {norm.p[1]} reps para Normal
                 </p>
               ) : null;
             })()}
@@ -966,6 +987,55 @@ const supabase = createBrowserClient(
             </div>
           </div>
         </div>
+
+        {/* Panel de resultados por percentil */}
+        {(() => {
+          const perc = getStsPercentile(indicators.sts.reps, patientData.age, patientData.genero);
+          if (!perc) return null;
+          const { norm, band } = perc;
+          const percLabels = ['P2.5', 'P25', 'P50', 'P75', 'P97.5'];
+          const generoLabel = patientData.genero?.charAt(0).toUpperCase() + patientData.genero?.slice(1);
+          return (
+            <div className="sts-results-panel">
+              <div className="sts-results-cards">
+                <div className="sts-result-card">
+                  <span className="sts-result-card-label">Grupo Etario</span>
+                  <span className="sts-result-card-value neutral">{norm.label} años</span>
+                </div>
+                <div className="sts-result-card" style={{ borderColor: band.color, background: band.bg }}>
+                  <span className="sts-result-card-label">Percentil Alcanzado</span>
+                  <span className="sts-result-card-value" style={{ color: band.color }}>{band.label}</span>
+                </div>
+                <div className="sts-result-card sts-result-card-interp">
+                  <span className="sts-result-card-label">Interpretación Clínica</span>
+                  <span className="sts-result-card-text" style={{ color: band.color }}>{band.text}</span>
+                </div>
+              </div>
+              <div className="sts-mini-table-wrap">
+                <p className="sts-mini-table-title">Tabla de referencia — {generoLabel} · {norm.label} años (Otto-Yáñez et al. 2025)</p>
+                <table className="sts-mini-table">
+                  <thead>
+                    <tr>
+                      <th>Percentil</th>
+                      {percLabels.map(l => <th key={l} className={l === 'P25' ? 'sts-p25' : ''}>{l}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="sts-ref-group">{norm.label} años</td>
+                      {norm.p.map((v, i) => (
+                        <td key={i}
+                          className={i === 1 ? 'sts-p25' : ''}
+                          style={i === band.colIdx ? { background: band.bg, color: band.color, fontWeight: 700 } : {}}
+                        >{v}</td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="card">
