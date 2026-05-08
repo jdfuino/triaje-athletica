@@ -1028,11 +1028,13 @@ const supabase = createBrowserClient(
             </svg>
           </span>
           <h2>Sit-to-Stand Test (60 seg)</h2>
-          <button className="sts-ref-btn" onClick={() => setShowStsRef(true)} title="Ver tabla de referencia">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Ver referencia
-          </button>
-          <NotaBtn modulo="sts" />
+          <div className="card-header-actions">
+            <button className="sts-ref-btn" onClick={() => setShowStsRef(true)} title="Ver tabla de referencia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Ver referencia
+            </button>
+            <NotaBtn modulo="sts" />
+          </div>
         </div>
 
         {/* Modal tabla de referencia STS */}

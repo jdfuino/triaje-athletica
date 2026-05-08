@@ -368,6 +368,13 @@ textarea:focus {
 }
 
 /* ─── Nota por Módulo ────────────────────────────────────────────────────── */
+.card-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .nota-btn {
   margin-left: auto;
   flex-shrink: 0;
@@ -388,6 +395,8 @@ textarea:focus {
   border-color: var(--secondary);
   color: var(--secondary);
 }
+
+.card-header-actions .nota-btn { margin-left: 0; }
 
 .nota-btn.has-nota {
   border-color: var(--secondary);
