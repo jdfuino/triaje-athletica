@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 export async function POST(req) {
     try {
         const body = await req.json();
-        const { evaluacionId, patientData, indicators, specialist } = body;
+        const { evaluacionId, patientData, indicators, notas, specialist } = body;
 
         if (!patientData?.id) {
             return NextResponse.json({ error: 'Cédula del paciente requerida' }, { status: 400 });
@@ -61,6 +61,7 @@ export async function POST(req) {
                 sts_status:                 indicators.sts?.status || null,
                 dinamometro_derecha:        indicators.dinamometro?.derecha   || null,
                 dinamometro_izquierda:      indicators.dinamometro?.izquierda || null,
+                notas_modulos:              notas && Object.values(notas).some(v => v) ? notas : null,
                 observaciones:              indicators.observations || null,
                 specialist_id:              specialist?.id     || null,
                 specialist_nombre:          specialist?.nombre || null,

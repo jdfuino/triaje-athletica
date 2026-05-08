@@ -3,9 +3,21 @@
 import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter, FiPlay, FiPause } from 'react-icons/fi';
+import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter, FiPlay, FiPause, FiEdit2 } from 'react-icons/fi';
 import { BiLaugh, BiHappy, BiFace, BiSad, BiAngry, BiDizzy } from 'react-icons/bi';
 import { createBrowserClient } from '@supabase/ssr';
+
+// ─── Module Note Labels ───────────────────────────────────────────────────────
+const MODULO_LABELS = {
+  vitales:     'Indicadores Cardiovasculares y Oximetría',
+  rangos:      'Rangos Articulares',
+  eva:         'Escala de Dolor (EVA)',
+  fuerza:      'Fuerza Muscular',
+  adams:       'Prueba de Adams',
+  flexibilidad:'Flexibilidad',
+  sts:         'Sit-to-Stand Test',
+  dinamometro: 'Fuerza de Presión con Dinamómetro',
+};
 
 // ─── EVA Pain Scale ──────────────────────────────────────────────────────────
 const EVA_CATS = [
@@ -116,7 +128,7 @@ const STS_TEXT = {
   deficit: (r) => `En la prueba funcional Sit-to-Stand (60 segundos), completaste ${r} repeticiones, resultado que indica una reducción en la capacidad funcional de miembros inferiores. Se recomienda un programa de fortalecimiento progresivo.`,
 };
 
-function buildReport(indicators) {
+function buildReport(indicators, notas = {}) {
   const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [], eva: [], sts: [], dinamometro: [] };
 
   // Signos vitales
@@ -222,6 +234,16 @@ function buildReport(indicators) {
       r.dinamometro.push(`Fuerza de prensión mano izquierda: ${d.izquierda === 'normal' ? 'dentro de los parámetros normales' : 'con déficit detectado'}.`);
   }
 
+  // Notas por módulo — se añaden al final de cada sección en cursiva
+  if (notas.vitales)      r.vitales.push('__nota__' + notas.vitales);
+  if (notas.rangos)       r.rangos.push('__nota__' + notas.rangos);
+  if (notas.eva)          r.eva.push('__nota__' + notas.eva);
+  if (notas.fuerza)       r.fuerza.push('__nota__' + notas.fuerza);
+  if (notas.adams)        r.adams.push('__nota__' + notas.adams);
+  if (notas.flexibilidad) r.flexibilidad.push('__nota__' + notas.flexibilidad);
+  if (notas.sts)          r.sts.push('__nota__' + notas.sts);
+  if (notas.dinamometro)  r.dinamometro.push('__nota__' + notas.dinamometro);
+
   return r;
 }
 
@@ -264,6 +286,18 @@ export default function Home() {
   const [specialist, setSpecialist] = useState({ nombre: '', rol: '' });
   const [evaluacionId, setEvaluacionId] = useState(null);
   const [showStsRef, setShowStsRef] = useState(false);
+  const [notas, setNotas] = useState({ vitales: '', rangos: '', eva: '', fuerza: '', adams: '', flexibilidad: '', sts: '', dinamometro: '' });
+  const [notaModal, setNotaModal] = useState({ open: false, modulo: null });
+
+  const NotaBtn = ({ modulo }) => (
+    <button
+      className={`nota-btn ${notas[modulo] ? 'has-nota' : ''}`}
+      onClick={() => setNotaModal({ open: true, modulo })}
+      title={notas[modulo] ? 'Ver/editar nota' : 'Agregar nota al especialista'}
+    >
+      <FiEdit2 size={15} />
+    </button>
+  );
 
   // Pre-evaluación
   const [view, setView] = useState('pre-eval');           // 'pre-eval' | 'form'
@@ -544,7 +578,7 @@ const supabase = createBrowserClient(
       const res = await fetch('/api/save-evaluation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evaluacionId: newId, patientData, indicators, specialist }),
+        body: JSON.stringify({ evaluacionId: newId, patientData, indicators, notas, specialist }),
       });
       if (res.ok) {
         setEvaluacionId(newId);
@@ -804,6 +838,7 @@ const supabase = createBrowserClient(
         <div className="card-header">
           <span className="section-number"><FiActivity /></span>
           <h2>Indicadores Cardiovasculares y Oximetría</h2>
+          <NotaBtn modulo="vitales" />
         </div>
         <div className="form-row cols-3">
           <div className="form-group">
@@ -845,6 +880,7 @@ const supabase = createBrowserClient(
         <div className="card-header">
           <span className="section-number"><FiMove /></span>
           <h2>Rangos Articulares</h2>
+          <NotaBtn modulo="rangos" />
         </div>
         <div className="checkbox-group">
           {Object.keys(indicators.rangos).map((art) => (
@@ -865,6 +901,7 @@ const supabase = createBrowserClient(
         <div className="card-header">
           <span className="section-number"><BiFace size={20} /></span>
           <h2>Escala de Dolor (EVA)</h2>
+          <NotaBtn modulo="eva" />
         </div>
         <p className="mb-3" style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
           Pregunta al atleta cuánto dolor siente tras la prueba de movilidad articular y selecciona el valor correspondiente.
@@ -918,6 +955,7 @@ const supabase = createBrowserClient(
         <div className="card-header">
           <span className="section-number"><FiZap /></span>
           <h2>Fuerza Muscular (Escala Daniels)</h2>
+          <NotaBtn modulo="fuerza" />
         </div>
         <p className="mb-3">Valores esperados: 5/5 Normal. Ingrese el valor evaluado:</p>
         <div className="checkbox-group">
@@ -934,6 +972,7 @@ const supabase = createBrowserClient(
         <div className="card-header">
           <span className="section-number"><FiAlignCenter /></span>
           <h2>Prueba de Adams</h2>
+          <NotaBtn modulo="adams" />
         </div>
         <div className="form-group" style={{ marginBottom: indicators.adams.columna === 'escoliosis' ? '1rem' : 0 }}>
           <label>Columna vertebral</label>
@@ -966,6 +1005,7 @@ const supabase = createBrowserClient(
         <div className="card-header">
           <span className="section-number"><FiRotateCw /></span>
           <h2>Flexibilidad</h2>
+          <NotaBtn modulo="flexibilidad" />
         </div>
         <div className="checkbox-group">
           {Object.keys(indicators.flexibilidad).map((muscle) => (
@@ -992,6 +1032,7 @@ const supabase = createBrowserClient(
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Ver referencia
           </button>
+          <NotaBtn modulo="sts" />
         </div>
 
         {/* Modal tabla de referencia STS */}
@@ -1152,6 +1193,7 @@ const supabase = createBrowserClient(
         <div className="card-header">
           <span className="section-number"><FiActivity /></span>
           <h2>Fuerza de Presión con Dinamómetro</h2>
+          <NotaBtn modulo="dinamometro" />
         </div>
         <div className="flex-col gap-4">
           {[
@@ -1182,6 +1224,27 @@ const supabase = createBrowserClient(
         </div>
         <textarea rows="4" placeholder="Escribe alguna conclusión o recomendación..." value={indicators.observations} onChange={(e) => setIndicators({ ...indicators, observations: e.target.value })}></textarea>
       </div>
+
+      {/* Modal de notas por módulo */}
+      {notaModal.open && (
+        <div className="nota-overlay" onClick={() => setNotaModal({ open: false, modulo: null })}>
+          <div className="nota-modal" onClick={e => e.stopPropagation()}>
+            <div className="nota-modal-header">
+              <h3>Nota — {MODULO_LABELS[notaModal.modulo]}</h3>
+              <button className="nota-close" onClick={() => setNotaModal({ open: false, modulo: null })}>✕</button>
+            </div>
+            <textarea
+              className="nota-textarea"
+              placeholder="Escribe observaciones específicas de este módulo..."
+              value={notas[notaModal.modulo] || ''}
+              onChange={e => setNotas({ ...notas, [notaModal.modulo]: e.target.value })}
+              rows={5}
+              autoFocus
+            />
+            <p className="nota-hint">Se guarda automáticamente al cerrar el modal</p>
+          </div>
+        </div>
+      )}
 
       <div className="sticky-actions">
         <button className="btn btn-secondary" onClick={downloadPDF} disabled={loading}>
@@ -1219,7 +1282,7 @@ const supabase = createBrowserClient(
 
           {/* Natural language sections */}
           {(() => {
-            const report = buildReport(indicators);
+            const report = buildReport(indicators, notas);
             const sections = [
               { title: 'Signos Vitales', items: report.vitales },
               { title: 'Rangos Articulares', items: report.rangos },
@@ -1234,7 +1297,11 @@ const supabase = createBrowserClient(
               items.length > 0 && (
                 <div key={title} className="pdf-nl-section">
                   <div className="pdf-nl-title">{title}</div>
-                  {items.map((p, i) => <p key={i} className="pdf-nl-para">{p}</p>)}
+                  {items.map((p, i) =>
+                    p.startsWith('__nota__')
+                      ? <p key={i} className="pdf-nl-para pdf-nl-nota">{p.replace('__nota__', '')}</p>
+                      : <p key={i} className="pdf-nl-para">{p}</p>
+                  )}
                 </div>
               )
             );

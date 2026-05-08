@@ -367,6 +367,123 @@ textarea:focus {
   background: rgba(255,255,255,0.25);
 }
 
+/* ─── Nota por Módulo ────────────────────────────────────────────────────── */
+.nota-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.nota-btn:hover {
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+.nota-btn.has-nota {
+  border-color: var(--secondary);
+  color: var(--secondary);
+  background: #ecfeff;
+}
+
+.nota-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.nota-modal {
+  background: white;
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nota-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nota-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.nota-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.nota-close:hover { background: #e2e8f0; }
+
+.nota-textarea {
+  width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text);
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.nota-textarea:focus {
+  outline: none;
+  border-color: var(--secondary);
+}
+
+.nota-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.pdf-nl-nota {
+  font-style: italic;
+  color: #475569;
+  border-left: 3px solid var(--secondary);
+  padding-left: 0.6rem;
+  margin-top: 0.25rem;
+}
+
 /* ─── EVA Pain Scale ─────────────────────────────────────────────────────── */
 .eva-faces-row {
   display: flex;
