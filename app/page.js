@@ -4,7 +4,24 @@ import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { FiSave, FiSend, FiUser, FiActivity, FiMove, FiZap, FiRotateCw, FiFileText, FiLogOut, FiHome, FiAlignCenter, FiPlay, FiPause } from 'react-icons/fi';
+import { BiLaugh, BiHappy, BiFace, BiSad, BiAngry, BiDizzy } from 'react-icons/bi';
 import { createBrowserClient } from '@supabase/ssr';
+
+// ─── EVA Pain Scale ──────────────────────────────────────────────────────────
+const EVA_CATS = [
+  { range: [0, 0],  label: 'Sin Dolor',       color: '#10b981', bg: '#d1fae5', Icon: BiLaugh,  selectVal: 0 },
+  { range: [1, 2],  label: 'Poco Dolor',       color: '#65a30d', bg: '#ecfccb', Icon: BiHappy,  selectVal: 1 },
+  { range: [3, 4],  label: 'Dolor Moderado',   color: '#f59e0b', bg: '#fef3c7', Icon: BiFace,   selectVal: 3 },
+  { range: [5, 6],  label: 'Dolor Fuerte',     color: '#f97316', bg: '#ffedd5', Icon: BiSad,    selectVal: 5 },
+  { range: [7, 8],  label: 'Dolor Muy Fuerte', color: '#ef4444', bg: '#fee2e2', Icon: BiAngry,  selectVal: 7 },
+  { range: [9, 10], label: 'Dolor Extremo',    color: '#991b1b', bg: '#fee2e2', Icon: BiDizzy,  selectVal: 9 },
+];
+const EVA_NUM_COLORS = ['#10b981','#65a30d','#84cc16','#eab308','#f59e0b','#f97316','#ea580c','#ef4444','#dc2626','#b91c1c','#991b1b'];
+
+function getEvaCat(value) {
+  if (value === null || value === undefined) return null;
+  return EVA_CATS.find(c => value >= c.range[0] && value <= c.range[1]) || null;
+}
 
 // ─── STS Normative Values (Otto-Yáñez et al. 2025, Chilean population) ────────
 // p = [P2.5, P25, P50, P75, P97.5]. P25 is the Normal threshold.
@@ -100,7 +117,7 @@ const STS_TEXT = {
 };
 
 function buildReport(indicators) {
-  const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [], sts: [], dinamometro: [] };
+  const r = { vitales: [], rangos: [], fuerza: [], adams: [], flexibilidad: [], eva: [], sts: [], dinamometro: [] };
 
   // Signos vitales
   if (indicators.pa.sys && indicators.pa.dia && PA_TEXT[indicators.pa.status])
@@ -163,6 +180,25 @@ function buildReport(indicators) {
   if (flNorm.length) r.flexibilidad.push(`Flexibilidad adecuada en: ${flNorm.join(', ')}.`);
   if (flDef.length) r.flexibilidad.push(`Flexibilidad reducida en: ${flDef.join(', ')}. Se recomienda incorporar estiramientos regulares específicos para estas zonas.`);
 
+  // Escala de Dolor EVA
+  if (indicators.eva !== null && indicators.eva !== undefined) {
+    const v = indicators.eva;
+    const cat = getEvaCat(v);
+    const label = cat?.label || '';
+    if (v === 0)
+      r.eva.push('El atleta no refirió dolor durante la evaluación de rangos articulares.');
+    else if (v <= 2)
+      r.eva.push(`El atleta refirió ${label.toLowerCase()} durante la prueba de movilidad (EVA ${v}/10), dentro de un rango leve.`);
+    else if (v <= 4)
+      r.eva.push(`El atleta refirió ${label.toLowerCase()} (EVA ${v}/10) durante la prueba de movilidad articular.`);
+    else if (v <= 6)
+      r.eva.push(`El atleta refirió ${label.toLowerCase()} (EVA ${v}/10). Se recomienda evaluación adicional de las articulaciones comprometidas.`);
+    else if (v <= 8)
+      r.eva.push(`El atleta refirió ${label.toLowerCase()} (EVA ${v}/10). Se sugiere limitar la actividad física hasta nueva evaluación médica.`);
+    else
+      r.eva.push(`El atleta refirió ${label.toLowerCase()} (EVA ${v}/10). Se recomienda atención médica prioritaria antes de continuar la actividad deportiva.`);
+  }
+
   // Sit-to-Stand
   const sts = indicators.sts;
   if (sts?.reps && sts?.status && STS_TEXT[sts.status])
@@ -214,6 +250,7 @@ export default function Home() {
     flexibilidad: {
       psoas: 'normal', cuadriceps: 'normal', isquiotibiales: 'normal'
     },
+    eva: null,
     sts: { reps: '', status: '' },
     dinamometro: { derecha: 'normal', izquierda: 'normal' },
     observations: ''
@@ -823,6 +860,60 @@ const supabase = createBrowserClient(
         </div>
       </div>
 
+      {/* Escala de Dolor EVA */}
+      <div className="card">
+        <div className="card-header">
+          <span className="section-number"><BiFace size={20} /></span>
+          <h2>Escala de Dolor (EVA)</h2>
+        </div>
+        <p className="mb-3" style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+          Pregunta al atleta cuánto dolor siente tras la prueba de movilidad articular y selecciona el valor correspondiente.
+        </p>
+
+        {/* Íconos de caras */}
+        <div className="eva-faces-row">
+          {EVA_CATS.map((cat) => {
+            const active = indicators.eva !== null && indicators.eva >= cat.range[0] && indicators.eva <= cat.range[1];
+            return (
+              <button key={cat.label} className={`eva-face-btn ${active ? 'active' : ''}`}
+                style={active ? { color: cat.color, borderColor: cat.color, background: cat.bg } : {}}
+                onClick={() => setIndicators({ ...indicators, eva: cat.selectVal })}
+                title={cat.label}
+              >
+                <cat.Icon size={36} />
+                <span className="eva-face-label" style={active ? { color: cat.color } : {}}>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Barra numérica 0–10 */}
+        <div className="eva-num-row">
+          {EVA_NUM_COLORS.map((color, i) => {
+            const active = indicators.eva === i;
+            return (
+              <button key={i} className={`eva-num-btn ${active ? 'active' : ''}`}
+                style={{ '--eva-color': color, ...(active ? { background: color, color: '#fff', borderColor: color } : {}) }}
+                onClick={() => setIndicators({ ...indicators, eva: i })}
+              >{i}</button>
+            );
+          })}
+        </div>
+
+        {/* Resultado activo */}
+        {(() => {
+          const cat = getEvaCat(indicators.eva);
+          return cat ? (
+            <div className="eva-result" style={{ borderColor: cat.color, background: cat.bg }}>
+              <span className="eva-result-value" style={{ color: cat.color }}>EVA {indicators.eva}/10</span>
+              <span className="eva-result-label" style={{ color: cat.color }}>{cat.label}</span>
+            </div>
+          ) : (
+            <p className="eva-placeholder">Sin selección — toca una cara o un número para registrar el dolor</p>
+          );
+        })()}
+      </div>
+
       <div className="card">
         <div className="card-header">
           <span className="section-number"><FiZap /></span>
@@ -1135,6 +1226,7 @@ const supabase = createBrowserClient(
               { title: 'Fuerza Muscular', items: report.fuerza },
               { title: 'Prueba de Adams', items: report.adams },
               { title: 'Flexibilidad', items: report.flexibilidad },
+              { title: 'Escala de Dolor (EVA)', items: report.eva },
               { title: 'Prueba Funcional (Sit-to-Stand)', items: report.sts },
               { title: 'Fuerza de Presión (Dinamómetro)', items: report.dinamometro },
             ];

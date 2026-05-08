@@ -56,6 +56,7 @@ export async function POST(req) {
                 flex_psoas:                 indicators.flexibilidad?.psoas || null,
                 flex_cuadriceps:            indicators.flexibilidad?.cuadriceps || null,
                 flex_isquiotibiales:        indicators.flexibilidad?.isquiotibiales || null,
+                eva_dolor:                  indicators.eva !== null && indicators.eva !== undefined ? parseInt(indicators.eva) : null,
                 sts_reps:                   indicators.sts?.reps ? parseInt(indicators.sts.reps) : null,
                 sts_status:                 indicators.sts?.status || null,
                 dinamometro_derecha:        indicators.dinamometro?.derecha   || null,
