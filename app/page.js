@@ -1317,26 +1317,7 @@ const supabase = createBrowserClient(
             </div>
           )}
 
-          {/* Firmas */}
-          <div className="pdf-signatures">
-            <div className="signature-box">
-              <div className="signature-img-container">
-                <div style={{ fontFamily: 'cursive', fontSize: '24px', color: '#000' }}>Firma Fisiatra</div>
-              </div>
-              <div className="signature-line">Firma del Médico Evaluador</div>
-            </div>
-            <div className="signature-box">
-              <div className="signature-img-container">
-                <div style={{ border: '2px solid red', color: 'red', padding: '10px', transform: 'rotate(-10deg)', fontSize: '18px', fontWeight: 'bold' }}>SELLO OFICIAL</div>
-              </div>
-              <div className="signature-line">Sello Médico</div>
-            </div>
-          </div>
-
-          {/* Banner clínica aliada */}
-          <div className="pdf-partner-banner">
-            <img src="/clinica_aliada_banner.jpg" alt="Clínica aliada" />
-          </div>
+          {/* Firmas y banner temporalmente ocultos para demo */}
 
         </div>
       </div>
