@@ -796,7 +796,7 @@ textarea:focus {
   line-height: 1.45;
 }
 
-.sts-mini-table-wrap { margin-top: 4px; }
+.sts-mini-table-wrap { margin-top: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 .sts-mini-table-title {
   font-size: 0.75rem;
@@ -846,6 +846,8 @@ textarea:focus {
   .sts-timer-btns { flex-direction: column; width: 100%; }
   .sts-timer-btn { width: 100%; }
   .sts-result-row { grid-template-columns: 1fr; }
+  .sts-mini-table th,
+  .sts-mini-table td { padding: 6px 8px; font-size: 0.78rem; }
 }
 
 .status-btn {
